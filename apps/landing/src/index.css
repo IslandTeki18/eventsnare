@@ -44,10 +44,22 @@
   }
 }
 
-.animate-fade-in-up {
-  animation: fadeInUp 0.45s ease-out forwards;
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fadeInUp 0.45s ease-out forwards;
+  }
+
+  .reveal-hidden {
+    opacity: 0;
+  }
 }
 
-.reveal-hidden {
-  opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
+    opacity: 1;
+  }
+  .reveal-hidden {
+    opacity: 1;
+  }
 }
