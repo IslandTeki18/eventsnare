@@ -18,7 +18,7 @@ export const waitlistOptions = httpAction(async () => {
 
 export const waitlistSignup = httpAction(async (_ctx, request) => {
   const apiKey = process.env.RESEND_API_KEY;
-  const audienceId = process.env.RESEND_AUDIENCE_ID;
+  const audienceId = process.env.RESEND_AUDIENCE_ID?.trim();
 
   if (!apiKey || !audienceId) {
     return new Response(
@@ -61,6 +61,15 @@ export const waitlistSignup = httpAction(async (_ctx, request) => {
   );
 
   if (!resendRes.ok) {
+    if (resendRes.status === 422) {
+      // Already subscribed — treat as success
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      );
+    }
+    const errorBody = await resendRes.text();
+    console.error(`[waitlist] Resend error ${resendRes.status}: ${errorBody}`);
     return new Response(
       JSON.stringify({ error: 'Failed to subscribe' }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
