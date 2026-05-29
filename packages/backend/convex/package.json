@@ -1,0 +1,30 @@
+{
+  "name": "@eventsnare/convex",
+  "private": true,
+  "version": "0.0.0",
+  "main": "./schema.ts",
+  "types": "./schema.ts",
+  "exports": {
+    ".": "./schema.ts",
+    "./schema": "./schema.ts",
+    "./_generated/*": "./_generated/*"
+  },
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy",
+    "codegen": "convex codegen --typecheck=disable",
+    "postinstall": "convex codegen --typecheck=disable || true",
+    "typecheck": "echo 'convex typecheck happens via convex dev'"
+  },
+  "dependencies": {
+    "convex": "^1.17.0",
+    "@clerk/backend": "^1.13.0",
+    "svix": "^1.32.0",
+    "web-push": "^3.6.7",
+    "@types/web-push": "^3.6.4",
+    "stripe": "^17.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "projectName": "eventsnare",
+  "outputDirectory": "/Users/lmckell/Documents/Projects/Work",
+  "turborepo": true,
+  "apps": [
+    {
+      "name": "landing",
+      "platform": "web",
+      "layout": "navbar",
+      "features": [],
+      "theme": {
+        "presetId": "rose-pine",
+        "mode": "dark",
+        "colors": {
+          "background": "249 22% 12%",
+          "foreground": "245 50% 91%",
+          "primary": "343 76% 68%",
+          "primaryForeground": "345 40% 12%",
+          "secondary": "189 43% 73%",
+          "secondaryForeground": "189 30% 10%",
+          "muted": "249 15% 18%",
+          "mutedForeground": "248 15% 61%",
+          "border": "247 14% 24%"
+        },
+        "radius": 0.625,
+        "fonts": {
+          "body": {
+            "family": "Inter",
+            "googleFontPackage": "@fontsource/inter",
+            "weights": [
+              "400",
+              "500",
+              "600"
+            ],
+            "fallbacks": [
+              "system-ui",
+              "-apple-system",
+              "sans-serif"
+            ]
+          },
+          "mono": {
+            "family": "JetBrains Mono",
+            "googleFontPackage": "@fontsource/jetbrains-mono",
+            "weights": [
+              "400",
+              "500"
+            ],
+            "fallbacks": [
+              "ui-monospace",
+              "SFMono-Regular",
+              "monospace"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "web",
+      "platform": "web",
+      "layout": "sidebar",
+      "features": [
+        "auth",
+        "rbac",
+        "admin-dashboard",
+        "notifications",
+        "stripe-payments",
+        "theme-settings",
+        "settings",
+        "user-profile"
+      ],
+      "theme": {
+        "presetId": "rose-pine",
+        "mode": "dark",
+        "colors": {
+          "background": "249 22% 12%",
+          "foreground": "245 50% 91%",
+          "primary": "343 76% 68%",
+          "primaryForeground": "345 40% 12%",
+          "secondary": "189 43% 73%",
+          "secondaryForeground": "189 30% 10%",
+          "muted": "249 15% 18%",
+          "mutedForeground": "248 15% 61%",
+          "border": "247 14% 24%"
+        },
+        "radius": 0.625,
+        "fonts": {
+          "body": {
+            "family": "Inter",
+            "googleFontPackage": "@fontsource/inter",
+            "weights": [
+              "400",
+              "500",
+              "600"
+            ],
+            "fallbacks": [
+              "system-ui",
+              "-apple-system",
+              "sans-serif"
+            ]
+          },
+          "mono": {
+            "family": "JetBrains Mono",
+            "googleFontPackage": "@fontsource/jetbrains-mono",
+            "weights": [
+              "400",
+              "500"
+            ],
+            "fallbacks": [
+              "ui-monospace",
+              "SFMono-Regular",
+              "monospace"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

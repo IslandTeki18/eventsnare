@@ -1,0 +1,61 @@
+import { Route, Routes } from 'react-router';
+import { SignIn, SignUp } from '@/features/auth';
+import { AdminGate } from '@/features/admin-gate';
+import {
+  AdminLayout,
+  AdminOverview,
+  AdminUsers,
+  AdminActivity,
+  AdminSystem,
+} from '@/features/admin-dashboard';
+
+export function App() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Routes>
+        <Route path="/sign-in/*" element={<SignIn />} />
+        <Route path="/sign-up/*" element={<SignUp />} />
+        <Route
+          path="/"
+          element={
+            <AdminGate>
+              <AdminLayout>
+                <AdminOverview />
+              </AdminLayout>
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <AdminGate>
+              <AdminLayout>
+                <AdminUsers />
+              </AdminLayout>
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/activity"
+          element={
+            <AdminGate>
+              <AdminLayout>
+                <AdminActivity />
+              </AdminLayout>
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/system"
+          element={
+            <AdminGate>
+              <AdminLayout>
+                <AdminSystem />
+              </AdminLayout>
+            </AdminGate>
+          }
+        />
+      </Routes>
+    </div>
+  );
+}

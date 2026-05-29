@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* @scaffold:theme-start */
+@layer base {
+  :root {
+    --background: 249 22% 12%;
+    --foreground: 245 50% 91%;
+    --primary: 343 76% 68%;
+    --primary-foreground: 345 40% 12%;
+    --secondary: 189 43% 73%;
+    --secondary-foreground: 189 30% 10%;
+    --muted: 249 15% 18%;
+    --muted-foreground: 248 15% 61%;
+    --border: 247 14% 24%;
+    --radius: 0.625rem;
+    --font-body: Inter, system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+  body {
+    font-family: var(--font-body);
+  }
+}
+/* @scaffold:theme-end */
+
+@layer base {
+  body {
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
