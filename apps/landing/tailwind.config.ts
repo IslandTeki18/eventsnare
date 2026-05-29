@@ -16,6 +16,9 @@ export default {
           foreground: 'hsl(var(--muted-foreground))',
         },
         border: 'hsl(var(--border))',
+        destructive: {
+          DEFAULT: 'hsl(0 84% 60%)',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
