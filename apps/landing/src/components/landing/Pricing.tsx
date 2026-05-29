@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useReveal } from '@/lib/useReveal'
 
 interface PricingTier {
   name: string
@@ -50,49 +51,56 @@ const TIERS: PricingTier[] = [
 ]
 
 export function Pricing() {
+  const heading = useReveal()
+  const grid = useReveal()
+
   return (
     <section id="pricing" aria-labelledby="heading-pricing" className="mx-auto max-w-6xl px-6 py-24">
-      <div className="mb-12 text-center">
-        <h2 id="heading-pricing" className="text-3xl font-bold text-foreground">
-          Simple, predictable pricing
-        </h2>
-        <p className="mt-3 text-muted-foreground">No per-event fees. No surprise bills.</p>
+      <div ref={heading.ref} className={heading.className}>
+        <div className="mb-12 text-center">
+          <h2 id="heading-pricing" className="text-3xl font-bold text-foreground">
+            Simple, predictable pricing
+          </h2>
+          <p className="mt-3 text-muted-foreground">No per-event fees. No surprise bills.</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {TIERS.map(tier => (
-          <div
-            key={tier.name}
-            className={cn(
-              'relative flex flex-col gap-6 rounded-xl border bg-muted p-8',
-              tier.featured ? 'border-primary' : 'border-border'
-            )}
-          >
-            {tier.featured && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-medium text-primary-foreground">
-                Most popular
-              </span>
-            )}
-            <div>
-              <p className="font-semibold text-foreground">{tier.name}</p>
-              <p className="mt-1 text-3xl font-bold text-foreground">{tier.price}</p>
+      <div ref={grid.ref} className={grid.className}>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {TIERS.map(tier => (
+            <div
+              key={tier.name}
+              className={cn(
+                'relative flex flex-col gap-6 rounded-xl border bg-muted p-8',
+                tier.featured ? 'border-primary' : 'border-border'
+              )}
+            >
+              {tier.featured && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-medium text-primary-foreground">
+                  Most popular
+                </span>
+              )}
+              <div>
+                <p className="font-semibold text-foreground">{tier.name}</p>
+                <p className="mt-1 text-3xl font-bold text-foreground">{tier.price}</p>
+              </div>
+              <ul className="flex flex-col gap-2.5">
+                {tier.features.map(feature => (
+                  <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Check size={16} className="mt-0.5 shrink-0 text-primary" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="flex flex-col gap-2.5">
-              {tier.features.map(feature => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <Check size={16} className="mt-0.5 shrink-0 text-primary" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <p className="mt-8 text-center text-sm text-muted-foreground">
-        All plans include signature verification, deduplication, dead-letter queue, and
-        real-time dashboard. Overage pricing available on Growth and Pro.
-      </p>
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          All plans include signature verification, deduplication, dead-letter queue, and
+          real-time dashboard. Overage pricing available on Growth and Pro.
+        </p>
+      </div>
     </section>
   )
 }

@@ -7,6 +7,7 @@ import {
   Activity,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useReveal } from '@/lib/useReveal'
 
 interface FeatureCardProps {
   Icon: LucideIcon
@@ -65,29 +66,36 @@ const HEADER_NAMES = [
 ]
 
 export function Features() {
+  const heading = useReveal()
+  const grid = useReveal()
+
   return (
     <section aria-labelledby="heading-features" className="mx-auto max-w-6xl px-6 py-24">
-      <div className="mb-12 text-center">
-        <h2 id="heading-features" className="text-3xl font-bold text-foreground">
-          Everything your webhook pipeline needs
-        </h2>
-        <p className="mt-3 text-muted-foreground">Built for reliability from day one.</p>
+      <div ref={heading.ref} className={heading.className}>
+        <div className="mb-12 text-center">
+          <h2 id="heading-features" className="text-3xl font-bold text-foreground">
+            Everything your webhook pipeline needs
+          </h2>
+          <p className="mt-3 text-muted-foreground">Built for reliability from day one.</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {FEATURES.map(f => (
-          <FeatureCard key={f.title} {...f} />
-        ))}
-      </div>
+      <div ref={grid.ref} className={grid.className}>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {FEATURES.map(f => (
+            <FeatureCard key={f.title} {...f} />
+          ))}
+        </div>
 
-      <div className="mt-10 rounded-xl border border-border bg-muted px-8 py-6">
-        <p className="font-mono text-sm text-muted-foreground">
-          {HEADER_NAMES.join(' · ')}
-        </p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Every forwarded request carries these headers so your endpoint always knows exactly
-          what it&apos;s receiving and why.
-        </p>
+        <div className="mt-10 rounded-xl border border-border bg-muted px-8 py-6">
+          <p className="font-mono text-sm text-muted-foreground">
+            {HEADER_NAMES.join(' · ')}
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Every forwarded request carries these headers so your endpoint always knows exactly
+            what it&apos;s receiving and why.
+          </p>
+        </div>
       </div>
     </section>
   )

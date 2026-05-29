@@ -32,3 +32,22 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.45s ease-out forwards;
+}
+
+.reveal-hidden {
+  opacity: 0;
+}
