@@ -19,10 +19,11 @@
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "types": ["vitest/globals"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@convex/*": ["../../packages/convex/*"]
+      "@convex/*": ["../../packages/backend/convex/*"]
     }
   },
   "include": ["src"],
