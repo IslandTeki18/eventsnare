@@ -11,7 +11,7 @@ interface ProblemCardProps {
 function ProblemCard({ Icon, title, body }: ProblemCardProps) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted p-6">
-      <Icon className="text-primary" size={24} />
+      <Icon className="text-primary" size={24} aria-hidden />
       <h3 className="font-semibold text-foreground">{title}</h3>
       <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
     </div>

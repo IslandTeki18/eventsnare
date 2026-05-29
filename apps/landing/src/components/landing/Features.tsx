@@ -18,7 +18,7 @@ interface FeatureCardProps {
 function FeatureCard({ Icon, title, body }: FeatureCardProps) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted p-6">
-      <Icon className="text-primary" size={22} />
+      <Icon className="text-primary" size={22} aria-hidden />
       <h3 className="font-semibold text-foreground">{title}</h3>
       <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
     </div>

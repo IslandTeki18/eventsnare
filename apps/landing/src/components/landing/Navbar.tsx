@@ -51,7 +51,7 @@ export function Navbar() {
           aria-label="Toggle menu"
           aria-expanded={open}
         >
-          {open ? <X size={20} /> : <Menu size={20} />}
+          {open ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
         </button>
       </div>
 

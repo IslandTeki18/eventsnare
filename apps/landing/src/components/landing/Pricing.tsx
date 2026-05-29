@@ -87,7 +87,7 @@ export function Pricing() {
               <ul className="flex flex-col gap-2.5">
                 {tier.features.map(feature => (
                   <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Check size={16} className="mt-0.5 shrink-0 text-primary" />
+                    <Check size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
                     {feature}
                   </li>
                 ))}

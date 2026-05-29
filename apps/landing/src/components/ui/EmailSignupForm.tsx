@@ -15,8 +15,9 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFieldError('')
+    const trimmedEmail = email.trim()
 
-    if (!isValidEmail(email)) {
+    if (!isValidEmail(trimmedEmail)) {
       setFieldError('Please enter a valid email address.')
       setStatus('idle')
       return
@@ -27,7 +28,7 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
       const res = await fetch(`${import.meta.env.VITE_CONVEX_URL}/waitlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: trimmedEmail }),
       })
       if (!res.ok) {
         setStatus('error')
@@ -51,10 +52,10 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
   }
 
   return (
-    <form id={id} onSubmit={handleSubmit} className={cn('flex flex-col gap-3', className)}>
+    <form id={id} noValidate onSubmit={handleSubmit} className={cn('flex flex-col gap-3', className)}>
       <div className="flex gap-2">
         <input
-          type="text"
+          type="email"
           inputMode="email"
           autoComplete="email"
           aria-label="Email address"
@@ -72,9 +73,9 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
           {status === 'loading' ? 'Joining...' : 'Get early access'}
         </button>
       </div>
-      {fieldError && <p className="text-sm text-destructive">{fieldError}</p>}
+      {fieldError && <p role="alert" className="text-sm text-destructive">{fieldError}</p>}
       {status === 'error' && (
-        <p className="text-sm text-destructive">Something went wrong. Please try again.</p>
+        <p role="alert" className="text-sm text-destructive">Something went wrong. Please try again.</p>
       )}
       <p className="text-center text-xs text-muted-foreground">No spam. Launch updates only.</p>
     </form>
