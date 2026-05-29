@@ -57,6 +57,7 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
           type="text"
           inputMode="email"
           autoComplete="email"
+          aria-label="Email address"
           value={email}
           onChange={e => setEmail(e.target.value)}
           placeholder="your@email.com"

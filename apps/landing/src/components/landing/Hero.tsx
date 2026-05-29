@@ -1,29 +1,9 @@
 import { EmailSignupForm } from '@/components/ui/EmailSignupForm'
-import {
-  StripeIcon,
-  GitHubIcon,
-  ShopifyIcon,
-  ClerkIcon,
-  ResendIcon,
-} from './ProviderIcons'
-import type { ComponentType } from 'react'
-
-interface ProviderEntry {
-  name: string
-  Icon: ComponentType<{ className?: string; size?: number }>
-}
-
-const PROVIDERS: ProviderEntry[] = [
-  { name: 'Stripe', Icon: StripeIcon },
-  { name: 'GitHub', Icon: GitHubIcon },
-  { name: 'Shopify', Icon: ShopifyIcon },
-  { name: 'Clerk', Icon: ClerkIcon },
-  { name: 'Resend', Icon: ResendIcon },
-]
+import { PROVIDERS } from './providers'
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center px-6 pb-16 pt-24 text-center">
+    <section aria-label="Hero" className="relative flex min-h-screen flex-col items-center justify-center px-6 pb-16 pt-24 text-center">
       {/* Radial gradient background accent */}
       <div
         className="pointer-events-none absolute inset-0"

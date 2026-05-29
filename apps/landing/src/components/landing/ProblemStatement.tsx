@@ -37,8 +37,8 @@ const PROBLEMS = [
 
 export function ProblemStatement() {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-24">
-      <h2 className="mb-10 text-3xl font-bold text-foreground">
+    <section aria-labelledby="heading-problems" className="mx-auto max-w-6xl px-6 py-24">
+      <h2 id="heading-problems" className="mb-10 text-3xl font-bold text-foreground">
         The problem with webhooks
       </h2>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

@@ -19,6 +19,7 @@ export function Navbar() {
 
   return (
     <nav
+      aria-label="Main navigation"
       className={cn(
         'fixed left-0 right-0 top-0 z-50 transition-all duration-200',
         scrolled && 'border-b border-border bg-background/80 backdrop-blur-sm'
@@ -48,6 +49,7 @@ export function Navbar() {
           onClick={() => setOpen(v => !v)}
           className="text-foreground md:hidden"
           aria-label="Toggle menu"
+          aria-expanded={open}
         >
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>

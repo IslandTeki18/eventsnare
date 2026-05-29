@@ -66,9 +66,9 @@ const HEADER_NAMES = [
 
 export function Features() {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-24">
+    <section aria-labelledby="heading-features" className="mx-auto max-w-6xl px-6 py-24">
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-bold text-foreground">
+        <h2 id="heading-features" className="text-3xl font-bold text-foreground">
           Everything your webhook pipeline needs
         </h2>
         <p className="mt-3 text-muted-foreground">Built for reliability from day one.</p>

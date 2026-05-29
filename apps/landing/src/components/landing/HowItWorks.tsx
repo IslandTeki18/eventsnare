@@ -23,9 +23,9 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="bg-muted/40 px-6 py-24">
+    <section aria-labelledby="heading-how" className="bg-muted/40 px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <h2 className="mb-14 text-center text-3xl font-bold text-foreground">
+        <h2 id="heading-how" className="mb-14 text-center text-3xl font-bold text-foreground">
           How Eventsnare works
         </h2>
 

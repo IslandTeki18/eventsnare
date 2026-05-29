@@ -51,9 +51,9 @@ const TIERS: PricingTier[] = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="mx-auto max-w-6xl px-6 py-24">
+    <section id="pricing" aria-labelledby="heading-pricing" className="mx-auto max-w-6xl px-6 py-24">
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-bold text-foreground">
+        <h2 id="heading-pricing" className="text-3xl font-bold text-foreground">
           Simple, predictable pricing
         </h2>
         <p className="mt-3 text-muted-foreground">No per-event fees. No surprise bills.</p>
