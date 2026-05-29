@@ -37,17 +37,17 @@ const PROBLEMS = [
 ] as const
 
 export function ProblemStatement() {
-  const heading = useReveal()
-  const grid = useReveal()
+  const { ref: headingRef, className: headingClassName } = useReveal()
+  const { ref: gridRef, className: gridClassName } = useReveal()
 
   return (
     <section aria-labelledby="heading-problems" className="mx-auto max-w-6xl px-6 py-24">
-      <div ref={heading.ref} className={heading.className}>
+      <div ref={headingRef} className={headingClassName}>
         <h2 id="heading-problems" className="mb-10 text-3xl font-bold text-foreground">
           The problem with webhooks
         </h2>
       </div>
-      <div ref={grid.ref} className={grid.className}>
+      <div ref={gridRef} className={gridClassName}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {PROBLEMS.map(p => (
             <ProblemCard key={p.title} {...p} />

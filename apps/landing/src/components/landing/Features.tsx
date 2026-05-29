@@ -66,12 +66,12 @@ const HEADER_NAMES = [
 ]
 
 export function Features() {
-  const heading = useReveal()
-  const grid = useReveal()
+  const { ref: headingRef, className: headingClassName } = useReveal()
+  const { ref: gridRef, className: gridClassName } = useReveal()
 
   return (
     <section aria-labelledby="heading-features" className="mx-auto max-w-6xl px-6 py-24">
-      <div ref={heading.ref} className={heading.className}>
+      <div ref={headingRef} className={headingClassName}>
         <div className="mb-12 text-center">
           <h2 id="heading-features" className="text-3xl font-bold text-foreground">
             Everything your webhook pipeline needs
@@ -80,7 +80,7 @@ export function Features() {
         </div>
       </div>
 
-      <div ref={grid.ref} className={grid.className}>
+      <div ref={gridRef} className={gridClassName}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {FEATURES.map(f => (
             <FeatureCard key={f.title} {...f} />

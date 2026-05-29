@@ -51,12 +51,12 @@ const TIERS: PricingTier[] = [
 ]
 
 export function Pricing() {
-  const heading = useReveal()
-  const grid = useReveal()
+  const { ref: headingRef, className: headingClassName } = useReveal()
+  const { ref: gridRef, className: gridClassName } = useReveal()
 
   return (
     <section id="pricing" aria-labelledby="heading-pricing" className="mx-auto max-w-6xl px-6 py-24">
-      <div ref={heading.ref} className={heading.className}>
+      <div ref={headingRef} className={headingClassName}>
         <div className="mb-12 text-center">
           <h2 id="heading-pricing" className="text-3xl font-bold text-foreground">
             Simple, predictable pricing
@@ -65,7 +65,7 @@ export function Pricing() {
         </div>
       </div>
 
-      <div ref={grid.ref} className={grid.className}>
+      <div ref={gridRef} className={gridClassName}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {TIERS.map(tier => (
             <div

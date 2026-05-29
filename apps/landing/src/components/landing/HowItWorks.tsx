@@ -24,19 +24,19 @@ const STEPS = [
 ] as const
 
 export function HowItWorks() {
-  const heading = useReveal()
-  const grid = useReveal()
+  const { ref: headingRef, className: headingClassName } = useReveal()
+  const { ref: gridRef, className: gridClassName } = useReveal()
 
   return (
     <section aria-labelledby="heading-how" className="bg-muted/40 px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div ref={heading.ref} className={heading.className}>
+        <div ref={headingRef} className={headingClassName}>
           <h2 id="heading-how" className="mb-14 text-center text-3xl font-bold text-foreground">
             How Eventsnare works
           </h2>
         </div>
 
-        <div ref={grid.ref} className={grid.className}>
+        <div ref={gridRef} className={gridClassName}>
           <div className="relative grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-6">
             {/* Dashed connector line (desktop only) */}
             <div className="absolute left-0 right-0 top-5 hidden border-t border-dashed border-border md:block" />

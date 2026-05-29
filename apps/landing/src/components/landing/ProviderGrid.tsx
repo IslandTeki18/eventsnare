@@ -2,13 +2,13 @@ import { PROVIDERS } from './providers'
 import { useReveal } from '@/lib/useReveal'
 
 export function ProviderGrid() {
-  const heading = useReveal()
-  const grid = useReveal()
+  const { ref: headingRef, className: headingClassName } = useReveal()
+  const { ref: gridRef, className: gridClassName } = useReveal()
 
   return (
     <section aria-labelledby="heading-providers" className="bg-muted/40 px-6 py-24">
       <div className="mx-auto max-w-6xl">
-        <div ref={heading.ref} className={heading.className}>
+        <div ref={headingRef} className={headingClassName}>
           <div className="mb-12 text-center">
             <h2 id="heading-providers" className="text-3xl font-bold text-foreground">
               Works with the providers you already use
@@ -19,7 +19,7 @@ export function ProviderGrid() {
           </div>
         </div>
 
-        <div ref={grid.ref} className={grid.className}>
+        <div ref={gridRef} className={gridClassName}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5">
             {PROVIDERS.map(({ name, descriptor, Icon }) => (
               <div
