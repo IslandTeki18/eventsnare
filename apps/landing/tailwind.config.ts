@@ -17,7 +17,7 @@ export default {
         },
         border: 'hsl(var(--border))',
         destructive: {
-          DEFAULT: 'hsl(0 84% 60%)',
+          DEFAULT: 'hsl(var(--destructive))',
         },
       },
       borderRadius: {

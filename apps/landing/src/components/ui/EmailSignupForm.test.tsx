@@ -1,13 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { vi, beforeEach } from 'vitest'
+import { vi, beforeEach, afterEach } from 'vitest'
 import { EmailSignupForm } from './EmailSignupForm'
 
 const mockFetch = vi.fn()
-global.fetch = mockFetch
 
 beforeEach(() => {
+  vi.stubGlobal('fetch', mockFetch)
   mockFetch.mockReset()
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 test('renders email input and submit button', () => {

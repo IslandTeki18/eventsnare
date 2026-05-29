@@ -18,6 +18,7 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
 
     if (!isValidEmail(email)) {
       setFieldError('Please enter a valid email address.')
+      setStatus('idle')
       return
     }
 
@@ -40,7 +41,7 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
 
   if (status === 'success') {
     return (
-      <div className={cn('py-4 text-center', className)}>
+      <div id={id} className={cn('py-4 text-center', className)}>
         <p className="font-medium text-primary">You're on the list.</p>
         <p className="mt-1 text-sm text-muted-foreground">
           We'll email you when Eventsnare launches.
@@ -54,6 +55,8 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
       <div className="flex gap-2">
         <input
           type="text"
+          inputMode="email"
+          autoComplete="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
           placeholder="your@email.com"

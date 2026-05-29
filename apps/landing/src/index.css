@@ -14,6 +14,7 @@
     --muted: 249 15% 18%;
     --muted-foreground: 248 15% 61%;
     --border: 247 14% 24%;
+    --destructive: 0 84% 60%;
     --radius: 0.625rem;
     --font-body: Inter, system-ui, -apple-system, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
