@@ -7,6 +7,7 @@ import pushSubscriptionsTables from './pushSubscriptions/schema';
 import stripeTables from './stripe-payments/schema';
 import settingsTables from './settings/schema';
 import userProfileTables from './user-profile/schema';
+import ingressTables from './ingress/schema';
 // @scaffold:imports
 
 export default defineSchema({
@@ -18,5 +19,6 @@ export default defineSchema({
   ...stripeTables,
   ...settingsTables,
   ...userProfileTables,
+  ...ingressTables,
   // @scaffold:schema
 });
