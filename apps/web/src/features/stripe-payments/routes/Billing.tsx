@@ -6,7 +6,7 @@ import { api } from '@convex/_generated/api';
 
 export function Billing() {
   const data = useQuery(api.stripe.getMySubscription);
-  const createPortalSession = useAction(api.stripe.createPortalSession);
+  const createPortalSession = useAction(api.stripeActions.createPortalSession);
 
   const handleOpenPortal = async () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';

@@ -1,5 +1,3 @@
-'use node';
-
 import Stripe from 'stripe';
 import { httpAction } from '../_generated/server';
 import { internal } from '../_generated/api';
@@ -16,11 +14,20 @@ export const stripeWebhook = httpAction(async (ctx, request) => {
     return new Response('Missing stripe-signature header', { status: 400 });
   }
 
-  const stripe = new Stripe(apiKey, { apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion });
+  const stripe = new Stripe(apiKey, {
+    apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
+    httpClient: Stripe.createFetchHttpClient(),
+  });
   const payload = await request.text();
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(payload, signature, secret);
+    event = await stripe.webhooks.constructEventAsync(
+      payload,
+      signature,
+      secret,
+      undefined,
+      Stripe.createSubtleCryptoProvider(),
+    );
   } catch (err) {
     return new Response(`Invalid signature: ${err instanceof Error ? err.message : 'unknown'}`, {
       status: 400,

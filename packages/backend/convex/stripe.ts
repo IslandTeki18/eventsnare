@@ -1,15 +1,5 @@
-'use node';
-
 import { v } from 'convex/values';
-import Stripe from 'stripe';
-import { action, internalMutation, query } from './_generated/server';
-import { internal } from './_generated/api';
-
-function stripeClient(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error('Missing STRIPE_SECRET_KEY');
-  return new Stripe(key, { apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion });
-}
+import { internalMutation, internalQuery, query } from './_generated/server';
 
 export const listPlans = query({
   args: {},
@@ -42,52 +32,9 @@ export const getMySubscription = query({
   },
 });
 
-export const createCheckoutSession = action({
-  args: {
-    priceId: v.string(),
-    successUrl: v.string(),
-    cancelUrl: v.string(),
-  },
-  handler: async (ctx, { priceId, successUrl, cancelUrl }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
-    const stripe = stripeClient();
-    const customerId: string = await ctx.runMutation(
-      internal.stripe.getOrCreateStripeCustomer,
-      { clerkId: identity.subject, email: identity.email ?? '' },
-    );
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-    });
-    return { url: session.url };
-  },
-});
-
-export const createPortalSession = action({
-  args: { returnUrl: v.string() },
-  handler: async (ctx, { returnUrl }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
-    const stripe = stripeClient();
-    const customerId: string = await ctx.runMutation(
-      internal.stripe.getOrCreateStripeCustomer,
-      { clerkId: identity.subject, email: identity.email ?? '' },
-    );
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl,
-    });
-    return { url: session.url };
-  },
-});
-
-export const getOrCreateStripeCustomer = internalMutation({
-  args: { clerkId: v.string(), email: v.string() },
-  handler: async (ctx, { clerkId, email }) => {
+export const getStripeCustomerByClerkId = internalQuery({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
     const user = await ctx.db
       .query('users')
       .withIndex('byClerkId', (q) => q.eq('clerkId', clerkId))
@@ -97,19 +44,20 @@ export const getOrCreateStripeCustomer = internalMutation({
       .query('stripeCustomers')
       .withIndex('byUserId', (q) => q.eq('userId', user._id))
       .unique();
+    return { userId: user._id, stripeCustomerId: existing?.stripeCustomerId ?? null };
+  },
+});
+
+export const insertStripeCustomer = internalMutation({
+  args: { userId: v.id('users'), stripeCustomerId: v.string() },
+  handler: async (ctx, { userId, stripeCustomerId }) => {
+    const existing = await ctx.db
+      .query('stripeCustomers')
+      .withIndex('byUserId', (q) => q.eq('userId', userId))
+      .unique();
     if (existing) return existing.stripeCustomerId;
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (!key) throw new Error('Missing STRIPE_SECRET_KEY');
-    const stripe = new Stripe(key, { apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion });
-    const customer = await stripe.customers.create({
-      email,
-      metadata: { clerkId, userId: user._id },
-    });
-    await ctx.db.insert('stripeCustomers', {
-      userId: user._id,
-      stripeCustomerId: customer.id,
-    });
-    return customer.id;
+    await ctx.db.insert('stripeCustomers', { userId, stripeCustomerId });
+    return stripeCustomerId;
   },
 });
 

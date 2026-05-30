@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { internalMutation, mutation, query } from '../_generated/server';
+import { internalMutation, mutation, query } from './_generated/server';
 import { requireRole } from './rbac';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;

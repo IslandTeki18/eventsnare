@@ -16,7 +16,7 @@ interface PlanRow {
 export function Pricing() {
   const plans = useQuery(api.stripe.listPlans);
   const subscription = useQuery(api.stripe.getMySubscription);
-  const createCheckoutSession = useAction(api.stripe.createCheckoutSession);
+  const createCheckoutSession = useAction(api.stripeActions.createCheckoutSession);
 
   const handleSubscribe = async (priceId: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';

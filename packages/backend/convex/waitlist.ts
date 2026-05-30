@@ -1,5 +1,3 @@
-'use node';
-
 import { httpAction } from './_generated/server';
 
 function isValidEmail(email: string): boolean {

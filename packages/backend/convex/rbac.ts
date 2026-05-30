@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
-import { internalMutation, mutation, query } from '../_generated/server';
-import type { QueryCtx, MutationCtx } from '../_generated/server';
-import type { Doc, Id } from '../_generated/dataModel';
+import { internalMutation, mutation, query } from './_generated/server';
+import type { QueryCtx, MutationCtx } from './_generated/server';
+import type { Doc, Id } from './_generated/dataModel';
 
 export const DEFAULT_ROLES: Array<{
   name: string;
