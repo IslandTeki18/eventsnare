@@ -8,6 +8,7 @@ import {
   AdminActivity,
   AdminSystem,
 } from '@/features/admin-dashboard';
+import { BlogIndex, BlogEditor } from '@/features/blog-dashboard';
 
 export function App() {
   return (
@@ -31,6 +32,36 @@ export function App() {
             <AdminGate>
               <AdminLayout>
                 <AdminUsers />
+              </AdminLayout>
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/blog"
+          element={
+            <AdminGate>
+              <AdminLayout>
+                <BlogIndex />
+              </AdminLayout>
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/blog/new"
+          element={
+            <AdminGate>
+              <AdminLayout>
+                <BlogEditor />
+              </AdminLayout>
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/blog/:postId"
+          element={
+            <AdminGate>
+              <AdminLayout>
+                <BlogEditor />
               </AdminLayout>
             </AdminGate>
           }

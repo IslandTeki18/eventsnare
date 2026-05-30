@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router'
 import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -26,12 +27,20 @@ export function Navbar() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <span className="text-lg font-semibold text-foreground">Eventsnare</span>
+        <Link to="/" className="text-lg font-semibold text-foreground">
+          Eventsnare
+        </Link>
 
         {/* Desktop */}
         <div className="hidden items-center gap-6 md:flex">
+          <Link
+            to="/blog"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Blog
+          </Link>
           <a
-            href="#pricing"
+            href="/#pricing"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Pricing
@@ -58,8 +67,15 @@ export function Navbar() {
       {/* Mobile drawer */}
       {open && (
         <div className="flex flex-col gap-4 border-t border-border bg-background px-6 py-4 md:hidden">
+          <Link
+            to="/blog"
+            onClick={() => setOpen(false)}
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            Blog
+          </Link>
           <a
-            href="#pricing"
+            href="/#pricing"
             onClick={() => setOpen(false)}
             className="text-sm text-muted-foreground hover:text-foreground"
           >
