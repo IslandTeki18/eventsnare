@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { Newspaper } from 'lucide-react'
 import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { BlogLayout } from '@/components/landing/BlogLayout'
@@ -25,7 +26,24 @@ export function Blog() {
       {posts === undefined ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : posts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No posts yet. Check back soon.</p>
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-border px-6 py-16 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border text-muted-foreground">
+            <Newspaper className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <h2 className="text-lg font-semibold tracking-tight">No posts yet</h2>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              We are working on writing about webhook reliability and building Eventsnare. Check
+              back soon.
+            </p>
+          </div>
+          <Link
+            to="/"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            Back to home
+          </Link>
+        </div>
       ) : (
         <div className="flex flex-col gap-8">
           {posts.map((post) => (
