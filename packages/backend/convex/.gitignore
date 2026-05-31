@@ -1,2 +1,4 @@
-_generated/
+# _generated is committed so frontend builds (e.g. Vercel) resolve
+# @convex/_generated/* without a Convex deploy key. Re-run codegen and
+# commit after changing the schema or functions.
 .env.local
