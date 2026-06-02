@@ -11,6 +11,8 @@ import { mutation, query } from './_generated/server';
 
 // Deterministic fake whsec_ secret derived from the index — no Math.random needed and
 // stable across runs for reproducibility. Length mirrors a real Stripe signing secret.
+// The stress harness uses simulated delivery and never decrypts, so this fake value is
+// stored verbatim in signingSecretEncrypted (no real AES round-trip in the load test).
 function fakeSigningSecret(index: number): string {
   const seed = (index + 1) * 2654435761; // Knuth multiplicative hash
   let hex = '';
@@ -22,17 +24,57 @@ function fakeSigningSecret(index: number): string {
   return `whsec_${hex}`;
 }
 
+// Provision a throwaway workspace (and its owning stress-test user) for a load run. Returns
+// the workspace id the other helpers key off. Idempotent via the deterministic clerkId.
+export const setupWorkspace = mutation({
+  args: { label: v.string() },
+  handler: async (ctx, { label }) => {
+    const clerkId = `stress-test:${label}`;
+    let user = await ctx.db
+      .query('users')
+      .withIndex('byClerkId', (q) => q.eq('clerkId', clerkId))
+      .unique();
+    if (!user) {
+      const userId = await ctx.db.insert('users', {
+        clerkId,
+        email: `${label}@stress.test`,
+        name: `Stress ${label}`,
+      });
+      user = await ctx.db.get(userId);
+    }
+    const slug = `stress-${label}`;
+    let workspace = await ctx.db
+      .query('workspaces')
+      .withIndex('by_slug', (q) => q.eq('slug', slug))
+      .first();
+    if (!workspace) {
+      const workspaceId = await ctx.db.insert('workspaces', {
+        ownerUserId: user!._id,
+        slug,
+        name: `Stress ${label}`,
+        plan: 'free',
+        createdAt: Date.now(),
+      });
+      workspace = await ctx.db.get(workspaceId);
+    }
+    return workspace!._id;
+  },
+});
+
 export const setupSources = mutation({
-  args: { workspaceId: v.string(), count: v.number() },
+  args: { workspaceId: v.id('workspaces'), count: v.number() },
   handler: async (ctx, { workspaceId, count }) => {
     const ids = [];
     for (let i = 0; i < count; i++) {
       const id = await ctx.db.insert('sources', {
         workspaceId,
         provider: 'stripe',
+        name: `stress-source-${i}`,
         forwardUrl: `https://example.test/hooks/${workspaceId}/${i}`,
-        signingSecret: fakeSigningSecret(i),
+        signingSecretEncrypted: fakeSigningSecret(i),
         status: 'active',
+        maxRetries: 7,
+        createdAt: Date.now(),
       });
       ids.push(id);
     }
@@ -41,7 +83,7 @@ export const setupSources = mutation({
 });
 
 export const teardownAll = mutation({
-  args: { workspaceId: v.string() },
+  args: { workspaceId: v.id('workspaces') },
   handler: async (ctx, { workspaceId }) => {
     let eventsDeleted = 0;
     let attemptsDeleted = 0;
@@ -126,7 +168,7 @@ export const recordRunResults = mutation({
 });
 
 export const getDeliveryStats = query({
-  args: { workspaceId: v.string() },
+  args: { workspaceId: v.id('workspaces') },
   handler: async (ctx, { workspaceId }) => {
     const events = await ctx.db
       .query('events')

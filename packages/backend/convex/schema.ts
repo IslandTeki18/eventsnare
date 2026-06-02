@@ -8,6 +8,7 @@ import stripeTables from './stripe-payments/schema';
 import settingsTables from './settings/schema';
 import userProfileTables from './user-profile/schema';
 import ingressTables from './ingress/schema';
+import workspacesTables from './workspaces/schema';
 import blogTables from './blog/schema';
 // @scaffold:imports
 
@@ -21,6 +22,7 @@ export default defineSchema({
   ...settingsTables,
   ...userProfileTables,
   ...ingressTables,
+  ...workspacesTables,
   ...blogTables,
   // @scaffold:schema
 });

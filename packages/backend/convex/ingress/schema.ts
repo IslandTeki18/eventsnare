@@ -1,33 +1,44 @@
-// Ingress domain tables: the production-shaped webhook relay model the stress test
-// exercises (sources, events, deliveryAttempts, usageCounters) plus stressTestRuns for
-// recording each run's parameters and measured latencies. These are the real domain
-// tables from SPEC §8 translated to Convex; the harness writes to them so the load test
-// reflects the actual ingress hot path rather than throwaway scaffolding.
+// Ingress domain tables: the production-shaped webhook relay model (sources, events,
+// deliveryAttempts, usageCounters) plus stressTestRuns for recording each run's parameters
+// and measured latencies. These are the real domain tables from SPEC §8 translated to
+// Convex; the stress harness writes to them so the load test reflects the actual ingress
+// hot path rather than throwaway scaffolding.
 //
-// workspaceId is v.string() because no `workspaces` table exists yet; revisit when real
-// workspaces land. Event status follows the task spec (received | delivering | delivered |
-// failed | deadLetter); SPEC §8 additionally lists `queued`, reconciled later.
+// workspaceId references the `workspaces` table (SPEC §8). Event status follows the task
+// spec (received | delivering | delivered | failed | deadLetter); SPEC §8 additionally
+// lists `queued`, reconciled later.
+//
+// Signing secrets are stored as `signingSecretEncrypted` (base64 of iv||ciphertext,
+// AES-256-GCM, SPEC NFR-SEC-2). Plaintext only ever exists inside an action/httpAction.
 
 import { defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
 export const ingressTables = {
   sources: defineTable({
-    workspaceId: v.string(),
+    workspaceId: v.id('workspaces'),
     provider: v.string(),
+    name: v.string(),
     forwardUrl: v.string(),
-    signingSecret: v.string(),
+    signingSecretEncrypted: v.string(),
     status: v.string(),
+    maxRetries: v.number(),
+    createdAt: v.number(),
+    deletedAt: v.optional(v.number()),
   }).index('by_workspace', ['workspaceId']),
 
   events: defineTable({
     sourceId: v.id('sources'),
-    workspaceId: v.string(),
+    workspaceId: v.id('workspaces'),
     providerEventId: v.string(),
     eventType: v.string(),
     signatureValid: v.boolean(),
     rawBodyInline: v.optional(v.string()),
     rawBodyStorageId: v.optional(v.id('_storage')),
+    headersJson: v.optional(v.string()),
+    sourceIp: v.optional(v.string()),
+    originalSignature: v.optional(v.string()),
+    isTest: v.optional(v.boolean()),
     receivedAt: v.number(),
     status: v.union(
       v.literal('received'),
@@ -38,6 +49,7 @@ export const ingressTables = {
     ),
     attemptCount: v.number(),
     nextAttemptAt: v.optional(v.number()),
+    deadLetterAt: v.optional(v.number()),
   })
     .index('by_source_received', ['sourceId', 'receivedAt'])
     .index('by_dedup_key', ['sourceId', 'providerEventId'])
@@ -50,11 +62,12 @@ export const ingressTables = {
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
     statusCode: v.optional(v.number()),
+    responseBodyTruncated: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
   }).index('by_event', ['eventId']),
 
   usageCounters: defineTable({
-    workspaceId: v.string(),
+    workspaceId: v.id('workspaces'),
     billingPeriod: v.string(),
     eventCount: v.number(),
   }).index('by_workspace_period', ['workspaceId', 'billingPeriod']),

@@ -116,8 +116,14 @@ async function main(): Promise<number> {
     targetDurationSeconds: DURATION_SECONDS,
   });
 
+  // Provision a real workspace row for this run; sources/events/counters key off its id
+  // (workspaceId is now v.id('workspaces'), not a bare string).
+  const workspaceId = await client.mutation(api.stressTest.setupWorkspace, {
+    label: LABEL,
+  });
+
   const sourceIds = await client.mutation(api.stressTest.setupSources, {
-    workspaceId: WORKSPACE_ID,
+    workspaceId,
     count: SOURCE_COUNT,
   });
   console.log(`[stress] created ${sourceIds.length} sources`);
@@ -260,7 +266,7 @@ async function main(): Promise<number> {
   console.log(`[stress] waiting ${DRAIN_WAIT_SECONDS}s for scheduler to drain deliveries`);
   await sleep(DRAIN_WAIT_SECONDS * 1000);
   const stats = await client.query(api.stressTest.getDeliveryStats, {
-    workspaceId: WORKSPACE_ID,
+    workspaceId,
   });
   const deliveryRatio = stats.total > 0 ? stats.delivered / stats.total : 1;
   console.log(
@@ -305,7 +311,7 @@ async function main(): Promise<number> {
     console.log('[stress] STRESS_KEEP_DATA=1 set; leaving test data in place');
   } else {
     const deleted = await client.mutation(api.stressTest.teardownAll, {
-      workspaceId: WORKSPACE_ID,
+      workspaceId,
     });
     console.log(
       `[stress] torn down: events=${deleted.eventsDeleted} attempts=${deleted.attemptsDeleted} ` +
