@@ -24,10 +24,24 @@ export function toHex(bytes: Uint8Array): string {
   return hex;
 }
 
+// Standard-alphabet base64 with padding, computed manually rather than via btoa. The
+// runtime's btoa cannot be relied on to emit standard base64 (some environments emit the
+// URL-safe alphabet), and Shopify signature comparison checks our output against the
+// provider's standard base64, so any +/ vs -_ divergence breaks verification.
+const B64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
 export function toBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
-  return btoa(binary);
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i]!;
+    const b1 = i + 1 < bytes.length ? bytes[i + 1]! : 0;
+    const b2 = i + 2 < bytes.length ? bytes[i + 2]! : 0;
+    out += B64_ALPHABET[b0 >> 2];
+    out += B64_ALPHABET[((b0 & 0x03) << 4) | (b1 >> 4)];
+    out += i + 1 < bytes.length ? B64_ALPHABET[((b1 & 0x0f) << 2) | (b2 >> 6)] : '=';
+    out += i + 2 < bytes.length ? B64_ALPHABET[b2 & 0x3f] : '=';
+  }
+  return out;
 }
 
 // Constant-time string comparison. Returns false immediately on length mismatch (length is
