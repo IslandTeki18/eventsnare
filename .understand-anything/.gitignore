@@ -1,0 +1,4 @@
+# Transient scratch and machine-local cache from /understand runs.
+.trash-*/
+tmp/
+intermediate/
