@@ -16,15 +16,8 @@ import { internalAction, internalMutation, mutation } from './_generated/server'
 import type { MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-
-// UTC YYYY-MM billing period. Usage counters roll up per calendar month in UTC so the
-// dedup/increment is deterministic regardless of the caller's timezone.
-function billingPeriodUTC(epochMs: number): string {
-  const d = new Date(epochMs);
-  const year = d.getUTCFullYear();
-  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
-}
+import { billingPeriodUTC, planLimit, QUOTA_THRESHOLDS } from './lib/plans';
+import { claimOnce } from './alerts/dispatch';
 
 interface PersistArgs {
   sourceId: Id<'sources'>;
@@ -98,14 +91,33 @@ async function persistEvent(ctx: MutationCtx, args: PersistArgs): Promise<Persis
       q.eq('workspaceId', source.workspaceId).eq('billingPeriod', billingPeriod),
     )
     .first();
+  const newCount = counter ? counter.eventCount + 1 : 1;
   if (counter) {
-    await ctx.db.patch(counter._id, { eventCount: counter.eventCount + 1 });
+    await ctx.db.patch(counter._id, { eventCount: newCount });
   } else {
     await ctx.db.insert('usageCounters', {
       workspaceId: source.workspaceId,
       billingPeriod,
-      eventCount: 1,
+      eventCount: newCount,
     });
+  }
+
+  // 5. Quota alerts (FR-ALERT-3): fire once per crossed threshold per billing period.
+  const workspace = await ctx.db.get(source.workspaceId);
+  if (workspace) {
+    const limit = planLimit(workspace.plan);
+    for (const threshold of QUOTA_THRESHOLDS) {
+      if (newCount < Math.ceil(limit * threshold)) continue;
+      const label = String(Math.round(threshold * 100));
+      if (await claimOnce(ctx, source.workspaceId, `quota:${billingPeriod}:${label}`)) {
+        await ctx.scheduler.runAfter(0, internal.alerts.dispatch.dispatchAlert, {
+          workspaceId: source.workspaceId,
+          type: 'quota',
+          subject: `Usage at ${label}% of your ${workspace.plan} plan limit`,
+          message: `Workspace "${workspace.name}" has used ${newCount} of ${limit} events this billing period (${billingPeriod}).`,
+        });
+      }
+    }
   }
 
   return { eventId, deduplicated: false, created: true, signatureValid: args.signatureValid };

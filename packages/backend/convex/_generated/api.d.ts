@@ -10,6 +10,8 @@
 
 import type * as admin from "../admin.js";
 import type * as adminActions from "../adminActions.js";
+import type * as alerts from "../alerts.js";
+import type * as alerts_dispatch from "../alerts/dispatch.js";
 import type * as auth_users from "../auth/users.js";
 import type * as auth_webhooks from "../auth/webhooks.js";
 import type * as blog from "../blog.js";
@@ -20,6 +22,8 @@ import type * as ingress from "../ingress.js";
 import type * as ingressHttp from "../ingressHttp.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_crypto from "../lib/crypto.js";
+import type * as lib_email from "../lib/email.js";
+import type * as lib_plans from "../lib/plans.js";
 import type * as notifications from "../notifications.js";
 import type * as profiles from "../profiles.js";
 import type * as providers_clerk from "../providers/clerk.js";
@@ -40,6 +44,7 @@ import type * as stressTest from "../stressTest.js";
 import type * as stripe from "../stripe.js";
 import type * as stripe_webhooks from "../stripe/webhooks.js";
 import type * as stripeActions from "../stripeActions.js";
+import type * as usage from "../usage.js";
 import type * as waitlist from "../waitlist.js";
 import type * as workspaces from "../workspaces.js";
 
@@ -52,6 +57,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   adminActions: typeof adminActions;
+  alerts: typeof alerts;
+  "alerts/dispatch": typeof alerts_dispatch;
   "auth/users": typeof auth_users;
   "auth/webhooks": typeof auth_webhooks;
   blog: typeof blog;
@@ -62,6 +69,8 @@ declare const fullApi: ApiFromModules<{
   ingressHttp: typeof ingressHttp;
   "lib/auth": typeof lib_auth;
   "lib/crypto": typeof lib_crypto;
+  "lib/email": typeof lib_email;
+  "lib/plans": typeof lib_plans;
   notifications: typeof notifications;
   profiles: typeof profiles;
   "providers/clerk": typeof providers_clerk;
@@ -82,6 +91,7 @@ declare const fullApi: ApiFromModules<{
   stripe: typeof stripe;
   "stripe/webhooks": typeof stripe_webhooks;
   stripeActions: typeof stripeActions;
+  usage: typeof usage;
   waitlist: typeof waitlist;
   workspaces: typeof workspaces;
 }>;

@@ -2,11 +2,12 @@ import { UserProfile } from '@clerk/clerk-react';
 import { ProtectedRoute } from '@/features/auth';
 import { SettingsSection } from '@/features/settings/components/SettingsSection';
 import { PreferenceToggle } from '@/features/settings/components/PreferenceToggle';
+import { AlertSettings } from '@/features/settings/components/AlertSettings';
 
 export function Settings() {
   return (
     <ProtectedRoute>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <div className="mx-auto max-w-5xl px-6 py-10">
         <h1 className="mb-6 text-2xl font-semibold tracking-tight">Settings</h1>
         <div className="flex flex-col gap-6">
           <SettingsSection title="Account" description="Manage email, password, and connected accounts.">
@@ -30,6 +31,12 @@ export function Settings() {
               label="Weekly digest"
               description="A summary of activity once per week."
             />
+          </SettingsSection>
+          <SettingsSection
+            title="Alerts"
+            description="Get notified by email or Slack when deliveries fail, events are dead-lettered, or you approach your usage limit."
+          >
+            <AlertSettings />
           </SettingsSection>
           <SettingsSection title="Privacy" description="Control how your data is used.">
             <PreferenceToggle

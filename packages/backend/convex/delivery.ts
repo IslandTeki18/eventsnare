@@ -10,6 +10,7 @@
 import { v } from 'convex/values';
 import { internalAction, internalMutation, internalQuery } from './_generated/server';
 import { internal } from './_generated/api';
+import { claimOnce, bumpFailBurst } from './alerts/dispatch';
 
 // SPEC FR-OUT-6 backoff: 10s, 30s, 2m, 10m, 1h, 6h, 24h. Index = attemptNumber - 1.
 const BACKOFF_MS = [
@@ -18,6 +19,7 @@ const BACKOFF_MS = [
 
 const DELIVERY_TIMEOUT_MS = 30_000; // SPEC FR-OUT-7
 const MAX_RESPONSE_BODY = 4_096; // store at most 4KB of the customer's response
+const FAIL_BURST_THRESHOLD = 10; // SPEC FR-ALERT-1: >10 failures in a 5-minute window
 
 export const getDeliveryContext = internalQuery({
   args: { eventId: v.id('events') },
@@ -140,6 +142,18 @@ export const recordAttemptResult = internalMutation({
       return;
     }
 
+    // Failure-burst alert (FR-ALERT-1): count failures per source in 5-minute windows and
+    // fire once when the window crosses the threshold.
+    const burstCount = await bumpFailBurst(ctx, event.workspaceId, event.sourceId, Date.now());
+    if (burstCount === FAIL_BURST_THRESHOLD) {
+      await ctx.scheduler.runAfter(0, internal.alerts.dispatch.dispatchAlert, {
+        workspaceId: event.workspaceId,
+        type: 'delivery_failure',
+        subject: `Delivery failures spiking for "${source.name}"`,
+        message: `Source "${source.name}" has failed more than ${FAIL_BURST_THRESHOLD} deliveries in the last 5 minutes. Check the forward URL.`,
+      });
+    }
+
     // Failure: retry until the source's max, then dead-letter (FR-OUT-6, FR-OUT-8).
     if (attemptNumber >= source.maxRetries) {
       await ctx.db.patch(args.eventId, {
@@ -148,6 +162,15 @@ export const recordAttemptResult = internalMutation({
         deadLetterAt: Date.now(),
         nextAttemptAt: undefined,
       });
+      // Dead-letter alert (FR-ALERT-2), once per event.
+      if (await claimOnce(ctx, event.workspaceId, `deadletter:${args.eventId}`)) {
+        await ctx.scheduler.runAfter(0, internal.alerts.dispatch.dispatchAlert, {
+          workspaceId: event.workspaceId,
+          type: 'dead_letter',
+          subject: `Event dead-lettered (${event.eventType})`,
+          message: `Event ${args.eventId} (${event.eventType}) from "${source.name}" reached the dead-letter state after ${attemptNumber} attempts. Replay it from the dashboard once the endpoint is healthy.`,
+        });
+      }
       return;
     }
 

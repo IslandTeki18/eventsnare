@@ -9,6 +9,7 @@ import settingsTables from './settings/schema';
 import userProfileTables from './user-profile/schema';
 import ingressTables from './ingress/schema';
 import workspacesTables from './workspaces/schema';
+import alertsTables from './alerts/schema';
 import blogTables from './blog/schema';
 // @scaffold:imports
 
@@ -23,6 +24,7 @@ export default defineSchema({
   ...userProfileTables,
   ...ingressTables,
   ...workspacesTables,
+  ...alertsTables,
   ...blogTables,
   // @scaffold:schema
 });
