@@ -50,7 +50,7 @@ Add:
 - `stripeProductId: optional(string)`
 - New index `byTier` on `['tier']`.
 
-`interval` (`month|year|one-time`) already exists and carries the annual variant. Monthly and annual rows of the same tier duplicate the limit fields; `createPlan`/`updatePlan` keep them consistent. `isActive` already exists and gates visibility on the customer Pricing page.
+`interval` (`month|year|one-time`) already exists and carries the annual variant. All catalog rows are `month` or `year` only; `byTier` resolution ignores any `one-time` rows (they have no meaningful tier). Monthly and annual rows of the same tier duplicate the limit fields; `createPlan`/`updatePlan` keep them consistent. `isActive` already exists and gates visibility on the customer Pricing page.
 
 ### 4.2 `workspaces` (extend `workspaces/schema.ts`)
 Add (all optional, free-default fallback via `effectiveLimits`):
@@ -60,13 +60,15 @@ Add (all optional, free-default fallback via `effectiveLimits`):
 - `overageEnabled: optional(boolean)`
 - `subscriptionStatus: optional(string)`
 - `currentPeriodEnd: optional(number)`
-- New index `by_plan` on `['plan']` (limit-refresh fan-out and retention iteration).
+- New index `by_plan` on `['plan']` (consumed only by `refreshWorkspacesForTier` fan-out; retention is per-workspace and does not use it).
+
+`subscriptionStatus` and `currentPeriodEnd` already live on the `subscriptions` row; the copies here are a denormalization for the dashboard. `subscriptions` remains the source of truth. Only the Stripe webhook (Unit 2) writes these workspace copies, so they cannot drift from any other writer.
 
 ### 4.3 `events` (extend `ingress/schema.ts`)
 - Add `quota_blocked` to the `status` union.
 
 ### 4.4 `usageCounters` (extend `ingress/schema.ts`)
-- Add `reportedOverageUnits: optional(number)` (units already reported to Stripe this period; enables idempotent delta reporting).
+- Add `reportedOverageUnits: optional(number)` (units already reported to Stripe this period; the delta-reporting cursor for idempotent reporting).
 
 ### 4.5 `lib/plans.ts`
 - `PLAN_LIMITS` remains the canonical **free-tier defaults** and dev seed values.
@@ -81,17 +83,18 @@ All new fields are optional. A `backfillWorkspacePlans` internal mutation backfi
 ## 5. Units
 
 ### Unit 1 — Tier catalog
-`plans` table as the catalog source of truth (fields in §4.1). The env-seeded `seedPlans` script is demoted to an optional **dev-only** bootstrap that inserts catalog rows with `isActive=false` and no Stripe IDs. Production pricing is admin-managed (Unit 9).
+`plans` table as the catalog source of truth (fields in §4.1). The `plans` table is currently empty (no seeding code exists today; `lib/plans.ts` `PLAN_LIMITS` is only a constant map, not a row inserter). Create an optional **dev-only** `seedPlans` bootstrap that inserts catalog rows with `isActive=false` and no Stripe IDs for local testing. Production pricing is admin-managed (Unit 9).
 
 ### Unit 2 — Plan resolution (subscription → workspace)
 Closes the core correctness bug: the webhook updates `subscriptions` but never `workspaces.plan`, so `planLimit` always reads `free`.
 
-- New internal mutation `applyPlanToWorkspace({ userId, tier, status, currentPeriodEnd, overageEnabled })`: resolves tier→limits from `plans.byTier`, finds the owner's workspace via `workspaces.by_owner`, patches `plan` + denormalized limits + `subscriptionStatus` + `currentPeriodEnd` + `overageEnabled`.
+- New internal mutation `applyPlanToWorkspace({ stripeCustomerId, tier, status, currentPeriodEnd, overageEnabled })`: resolves `userId` from `stripeCustomers.byStripeCustomerId` (the webhook only has `stripeCustomerId`, not `userId`), finds the owner's workspace via `workspaces.by_owner`, resolves tier→limits from `plans.byTier`, and patches `plan` + denormalized limits + `subscriptionStatus` + `currentPeriodEnd` + `overageEnabled`. Keying on `stripeCustomerId` avoids changing `upsertSubscription`'s signature/return.
 - `stripe/webhooks.ts` calls it after `upsertSubscription`:
   - `active`/`trialing` → set the tier from the Price.
   - `canceled`/`past_due`/`unpaid` → revert to free defaults.
   - `cancelAtPeriodEnd` while still `active` → keep the tier until period end.
-- Price→tier resolution: look up the `plans` row by `stripePriceId` (existing `byStripePriceId` index), read its `tier`. `overageEnabled` is derived from whether the subscription carries the tier's `overageStripePriceId` item.
+- **Subscription item parsing:** a subscription with overage enabled carries two items (the base tier Price and the overage metered Price), in non-deterministic order. The webhook must scan all of `sub.items.data`, not just `data[0]`: find the item whose Price matches a `plans.byStripePriceId` row with a non-null `tier` (→ the base tier), and separately detect whether any item's Price matches that tier's `overageStripePriceId` (→ `overageEnabled`). The current webhook reads only `items.data[0].price.id` and must be changed accordingly.
+- Price→tier resolution: look up the base `plans` row by `stripePriceId` (existing `byStripePriceId` index), read its `tier`.
 
 ### Unit 3 — Quota enforcement (persist-and-block)
 In `persistEvent`, after the usage increment:
@@ -101,14 +104,15 @@ In `persistEvent`, after the usage increment:
 - Over quota, not enabled, signature-valid → status `quota_blocked`, no delivery scheduled, still return 2xx.
 - Invalid-signature events keep current behavior (stored, never delivered) regardless of quota.
 
-`persistEvent` returns the quota decision; `ingestFromHttp` applies status + scheduling. `quota_blocked` events are replayable; replay re-checks quota/overage.
+`persistEvent` adds `quotaBlocked: boolean` to its return (`{ eventId, deduplicated, created, signatureValid, quotaBlocked }`). `ingestFromHttp` uses it to set status (`quota_blocked` when true) and skip scheduling; the existing stress-harness caller `ingestEvent` (`ingress.ts:160`) ignores the new field (its synthetic path is unaffected). `quota_blocked` events are replayable; replay re-checks quota/overage.
 
 ### Unit 4 — Source-count limits
 Enforce in `insertSource` (the transactional mutation, not just the action): count active (non-`deletedAt`) sources via `by_workspace`, compare to `effectiveLimits.sourceLimit` (`-1` = unlimited), throw a clear error when exceeded.
 
 ### Unit 5 — Overage metering (Stripe)
 - `setOverageEnabled(enabled)` action: adds/removes the tier's `overageStripePriceId` metered item on the live Stripe subscription. The webhook (subscription.updated → Unit 2) sets the authoritative `workspace.overageEnabled`.
-- Reporting cron (hourly): for each workspace with `overageEnabled` and `eventCount > quota` in the current period, compute `overageUnits = ceil((eventCount - quota) / 1000)`, report the delta vs `reportedOverageUnits` to the shared Stripe Billing Meter keyed by `stripeCustomerId`, then patch `reportedOverageUnits`. Delta-based + persisted cursor makes it idempotent and crash-safe.
+- Reporting cron (hourly): for each workspace with `overageEnabled` and `eventCount > quota` in the current period, compute `overageUnits = ceil((eventCount - quota) / 1000)` and `delta = overageUnits - reportedOverageUnits`; if `delta > 0`, report `delta` units to the shared Stripe Billing Meter keyed by `stripeCustomerId`, then patch `reportedOverageUnits = overageUnits`.
+- **Idempotency:** the meter call and the cursor patch are separate transactions across the action boundary, so a crash after a successful report but before the patch would otherwise re-report and double-count (Stripe meter events are additive and not deduplicated by default). The meter event therefore carries a Stripe **idempotency key** derived from `(workspaceId, billingPeriod, reportedOverageUnits)` (the pre-report cursor value). A retried run with the same cursor produces the same key and Stripe drops the duplicate; once the patch lands, the next run uses a new cursor and a new key.
 - Free/Pro have no `overageStripePriceId`; the toggle is disabled for them.
 
 ### Unit 6 — Retention crons (`crons.ts`, new)
@@ -147,7 +151,7 @@ Mirrors the blog-dashboard pattern: `requireRole(ctx, 'admin')` backend, `AdminG
 - **Downgrade below current usage:** workspace may already be over the new (lower) quota; subsequent events go `quota_blocked` (overage off) — no retroactive blocking of already-delivered events.
 - **Downgrade below current source count:** existing sources are kept; `insertSource` blocks new ones until under the limit.
 - **Retention vs dead-letter:** dead-letter replay window (30d) wins over a shorter plan window.
-- **Overage cron crash mid-report:** delta cursor (`reportedOverageUnits`) is patched only after a successful report; a crash re-reports the same delta, which the meter dedups by being additive on the next successful run (cursor ensures no double count).
+- **Overage cron crash mid-report:** the cursor (`reportedOverageUnits`) is patched only after a successful report. A crash between report and patch re-reports the same delta on the next run, but the Stripe idempotency key derived from the pre-report cursor (§5 Unit 5) makes Stripe drop the duplicate, so no double count.
 - **Admin edits limits for a tier with live subscribers:** `refreshWorkspacesForTier` propagates; until it runs, workspaces hold the prior denormalized limits.
 - **Plan resolution for an unknown Price:** if no `plans` row matches the `stripePriceId`, treat as free (fail safe) and log.
 
@@ -182,7 +186,7 @@ Mirrors the blog-dashboard pattern: `requireRole(ctx, 'admin')` backend, `AdminG
 6. v1 single-workspace-per-user makes subscription→workspace unambiguous.
 7. Stripe Prices are immutable; admin amount edits create-new + archive-old; existing subscribers keep their Price until re-checkout.
 8. A single shared Stripe Billing Meter backs all tier overage prices; created once via bootstrap.
-9. `seedPlans` is dev-only bootstrap; production pricing is admin-managed via Unit 9.
+9. The `plans` table is currently empty/unseeded; `seedPlans` is a new dev-only bootstrap, and production pricing is admin-managed via Unit 9.
 
 ---
 
