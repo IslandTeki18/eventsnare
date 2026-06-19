@@ -11,6 +11,7 @@ import { Home } from '@/features/dashboard';
 import { Onboarding } from '@/features/onboarding';
 import { SourcesList, SourceCreate, SourceDetail } from '@/features/sources';
 import { EventsList, EventDetail } from '@/features/events';
+import { Analytics } from '@/features/analytics';
 import { Usage } from '@/features/usage';
 // @scaffold:imports
 
@@ -42,6 +43,7 @@ export function App() {
           path="/events/:eventId"
           element={<DashboardLayout><EventDetail /></DashboardLayout>}
         />
+        <Route path="/analytics" element={<DashboardLayout><Analytics /></DashboardLayout>} />
         <Route path="/usage" element={<DashboardLayout><Usage /></DashboardLayout>} />
         <Route path="/billing" element={<DashboardLayout><Billing /></DashboardLayout>} />
         <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />

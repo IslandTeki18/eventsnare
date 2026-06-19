@@ -58,11 +58,23 @@ export const ingressTables = {
     attemptCount: v.number(),
     nextAttemptAt: v.optional(v.number()),
     deadLetterAt: v.optional(v.number()),
+    // Search + structured filters (P4). searchText is a derived, length-capped haystack
+    // (eventType + providerEventId + an inline-body prefix) backing the full-text search index;
+    // large payloads in File Storage are intentionally not indexed. lastStatusCode and
+    // lastErrorMessage are denormalized from the most recent delivery attempt so the dashboard
+    // can filter by delivery outcome without joining deliveryAttempts.
+    searchText: v.optional(v.string()),
+    lastStatusCode: v.optional(v.number()),
+    lastErrorMessage: v.optional(v.string()),
   })
     .index('by_source_received', ['sourceId', 'receivedAt'])
     .index('by_dedup_key', ['sourceId', 'providerEventId'])
     .index('by_status_scheduled', ['status', 'nextAttemptAt'])
-    .index('by_workspace_received', ['workspaceId', 'receivedAt']),
+    .index('by_workspace_received', ['workspaceId', 'receivedAt'])
+    .searchIndex('search_text', {
+      searchField: 'searchText',
+      filterFields: ['workspaceId', 'sourceId', 'status', 'eventType', 'lastStatusCode'],
+    }),
 
   deliveryAttempts: defineTable({
     eventId: v.id('events'),
@@ -79,6 +91,26 @@ export const ingressTables = {
     billingPeriod: v.string(),
     eventCount: v.number(),
   }).index('by_workspace_period', ['workspaceId', 'billingPeriod']),
+
+  // Per-source hourly delivery rollup (P3 observability). One row per (sourceId, hourBucket),
+  // upserted incrementally from every recorded delivery attempt — never by scanning
+  // deliveryAttempts, which does not scale at Indie volume (~250K events/mo). hourBucket is the
+  // attempt's completion time floored to the hour (epoch ms). latencyBuckets holds counts per
+  // fixed latency edge (see lib/deliveryStats), from which approximate p50/p95 are derived at
+  // read time. statusCounts maps HTTP status code (or "error" for transport failures) to a count.
+  deliveryStatsHourly: defineTable({
+    workspaceId: v.id('workspaces'),
+    sourceId: v.id('sources'),
+    hourBucket: v.number(),
+    attempts: v.number(),
+    succeeded: v.number(),
+    failed: v.number(),
+    deadLettered: v.number(),
+    statusCounts: v.record(v.string(), v.number()),
+    latencyBuckets: v.array(v.number()),
+  })
+    .index('by_source_hour', ['sourceId', 'hourBucket'])
+    .index('by_workspace_hour', ['workspaceId', 'hourBucket']),
 
   stressTestRuns: defineTable({
     label: v.string(),

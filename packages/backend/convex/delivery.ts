@@ -11,6 +11,7 @@ import { v } from 'convex/values';
 import { internalAction, internalMutation, internalQuery } from './_generated/server';
 import { internal } from './_generated/api';
 import { claimOnce, bumpFailBurst } from './alerts/dispatch';
+import { bumpDeliveryStats } from './lib/deliveryStats';
 import { decryptSecret } from './lib/crypto';
 import { isReservedForwardHeader } from './lib/forwardHeaders';
 import { hmacSha256, toHex } from './providers/hmac';
@@ -181,8 +182,29 @@ export const recordAttemptResult = internalMutation({
       errorMessage: args.errorMessage,
     });
 
+    // Roll this attempt into the per-source hourly stats (P3) and denormalize its outcome onto
+    // the event so the dashboard can filter by last delivery result without a join (P4).
+    const deadLettered = !args.success && attemptNumber >= source.maxRetries;
+    await bumpDeliveryStats(ctx, {
+      workspaceId: event.workspaceId,
+      sourceId: event.sourceId,
+      completedAt: args.completedAt,
+      latencyMs: args.completedAt - args.startedAt,
+      success: args.success,
+      statusCode: args.statusCode,
+      deadLettered,
+    });
+    const lastOutcome = {
+      lastStatusCode: args.statusCode,
+      lastErrorMessage: args.errorMessage,
+    };
+
     if (args.success) {
-      await ctx.db.patch(args.eventId, { status: 'delivered', attemptCount: attemptNumber });
+      await ctx.db.patch(args.eventId, {
+        status: 'delivered',
+        attemptCount: attemptNumber,
+        ...lastOutcome,
+      });
       return;
     }
 
@@ -205,6 +227,7 @@ export const recordAttemptResult = internalMutation({
         attemptCount: attemptNumber,
         deadLetterAt: Date.now(),
         nextAttemptAt: undefined,
+        ...lastOutcome,
       });
       // Dead-letter alert (FR-ALERT-2), once per event.
       if (await claimOnce(ctx, event.workspaceId, `deadletter:${args.eventId}`)) {
@@ -224,6 +247,7 @@ export const recordAttemptResult = internalMutation({
       status: 'failed',
       attemptCount: attemptNumber,
       nextAttemptAt,
+      ...lastOutcome,
     });
     await ctx.scheduler.runAfter(delay, internal.delivery.attempt, {
       eventId: args.eventId,

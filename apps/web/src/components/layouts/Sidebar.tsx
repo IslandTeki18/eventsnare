@@ -10,6 +10,7 @@ const navItems: NavItem[] = [
   { label: 'Home', to: '/' },
   { label: 'Sources', to: '/sources' },
   { label: 'Events', to: '/events' },
+  { label: 'Analytics', to: '/analytics' },
   { label: 'Usage', to: '/usage' },
   { label: 'Billing', to: '/billing' },
   { label: 'Settings', to: '/settings' },

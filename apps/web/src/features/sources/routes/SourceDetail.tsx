@@ -8,6 +8,7 @@ import { getProviderMeta } from '@/features/sources/lib/providers';
 import { ProviderSetupGuide } from '@/features/sources/components/ProviderSetupGuide';
 import { OutboundSecuritySettings } from '@/features/sources/components/OutboundSecuritySettings';
 import { TestEventButton } from '@/features/sources/components/TestEventButton';
+import { SourceAnalytics } from '@/features/analytics';
 
 export function SourceDetail() {
   const { sourceId } = useParams();
@@ -23,6 +24,7 @@ export function SourceDetail() {
 
   const [forwardUrl, setForwardUrl] = useState<string | null>(null);
   const [newSecret, setNewSecret] = useState('');
+  const [tab, setTab] = useState<'settings' | 'analytics'>('settings');
 
   if (source === undefined) {
     return <p className="px-6 py-10 text-sm text-muted-foreground">Loading…</p>;
@@ -84,6 +86,19 @@ export function SourceDetail() {
         </button>
       </div>
 
+      <div className="mb-6 flex gap-1 border-b border-border">
+        <TabButton active={tab === 'settings'} onClick={() => setTab('settings')} label="Settings" />
+        <TabButton
+          active={tab === 'analytics'}
+          onClick={() => setTab('analytics')}
+          label="Analytics"
+        />
+      </div>
+
+      {tab === 'analytics' ? (
+        <SourceAnalytics sourceId={id} />
+      ) : (
+        <>
       <section className="mb-6">
         <h2 className="mb-2 text-sm font-medium">Connection guide</h2>
         <ProviderSetupGuide
@@ -147,6 +162,32 @@ export function SourceDetail() {
           hasOutboundSecret={source.hasOutboundSecret}
         />
       </div>
+        </>
+      )}
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        active
+          ? '-mb-px border-b-2 border-primary px-3 py-2 text-sm font-medium text-foreground'
+          : '-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground'
+      }
+    >
+      {label}
+    </button>
   );
 }

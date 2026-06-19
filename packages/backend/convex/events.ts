@@ -26,6 +26,7 @@ export const list = query({
     sourceId: v.optional(v.id('sources')),
     status: v.optional(STATUS),
     eventType: v.optional(v.string()),
+    lastStatusCode: v.optional(v.number()),
     from: v.optional(v.number()),
     to: v.optional(v.number()),
   },
@@ -46,6 +47,9 @@ export const list = query({
         const conditions = [q.eq(q.field('workspaceId'), workspace._id)];
         if (args.status) conditions.push(q.eq(q.field('status'), args.status));
         if (args.eventType) conditions.push(q.eq(q.field('eventType'), args.eventType));
+        if (args.lastStatusCode !== undefined) {
+          conditions.push(q.eq(q.field('lastStatusCode'), args.lastStatusCode));
+        }
         if (args.from !== undefined) {
           conditions.push(q.gte(q.field('receivedAt'), args.from));
         }
@@ -54,6 +58,37 @@ export const list = query({
       });
 
     return await filtered.paginate(args.paginationOpts);
+  },
+});
+
+// Full-text event search (P4). Backed by the events `search_text` index over the derived
+// searchText field (eventType + providerEventId + inline-body prefix). Structured equality
+// filters (status, eventType, source, last delivery status code) are applied inside the index.
+// Search requires a non-empty term; the list query above handles the no-term browse case.
+// Coverage note: large payloads in File Storage are not indexed (see lib/searchText).
+export const search = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+    term: v.string(),
+    sourceId: v.optional(v.id('sources')),
+    status: v.optional(STATUS),
+    eventType: v.optional(v.string()),
+    lastStatusCode: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const workspace = await requireWorkspace(ctx);
+
+    return await ctx.db
+      .query('events')
+      .withSearchIndex('search_text', (q) => {
+        let s = q.search('searchText', args.term).eq('workspaceId', workspace._id);
+        if (args.sourceId) s = s.eq('sourceId', args.sourceId);
+        if (args.status) s = s.eq('status', args.status);
+        if (args.eventType) s = s.eq('eventType', args.eventType);
+        if (args.lastStatusCode !== undefined) s = s.eq('lastStatusCode', args.lastStatusCode);
+        return s;
+      })
+      .paginate(args.paginationOpts);
   },
 });
 

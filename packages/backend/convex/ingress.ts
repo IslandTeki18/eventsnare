@@ -18,6 +18,8 @@ import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { billingPeriodUTC, planLimit, QUOTA_THRESHOLDS } from './lib/plans';
 import { claimOnce } from './alerts/dispatch';
+import { bumpDeliveryStats } from './lib/deliveryStats';
+import { buildSearchText } from './lib/searchText';
 
 interface PersistArgs {
   sourceId: Id<'sources'>;
@@ -81,6 +83,7 @@ async function persistEvent(ctx: MutationCtx, args: PersistArgs): Promise<Persis
     receivedAt,
     status: 'received',
     attemptCount: 0,
+    searchText: buildSearchText(args.eventType, args.providerEventId, args.rawBodyInline),
   });
 
   // 4. Atomically increment the monthly usage counter, creating the row on first event.
@@ -203,6 +206,21 @@ export const recordDeliverySuccess = internalMutation({
       completedAt: now,
       statusCode: 200,
     });
-    await ctx.db.patch(eventId, { status: 'delivered', attemptCount: attemptNumber });
+    // Mirror the production rollup + denormalization (P3/P4) so the stress harness exercises
+    // the same observability path and its verification reconciles against raw attempts.
+    await bumpDeliveryStats(ctx, {
+      workspaceId: event.workspaceId,
+      sourceId: event.sourceId,
+      completedAt: now,
+      latencyMs: 0,
+      success: true,
+      statusCode: 200,
+      deadLettered: false,
+    });
+    await ctx.db.patch(eventId, {
+      status: 'delivered',
+      attemptCount: attemptNumber,
+      lastStatusCode: 200,
+    });
   },
 });
