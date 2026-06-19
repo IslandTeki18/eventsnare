@@ -2,6 +2,11 @@
 // Crypto API (crypto.subtle), available in Convex action/httpAction contexts and in Node 20
 // test runs. Comparison is constant-time to avoid leaking signature bytes via timing.
 
+import { bytesToHex } from '../lib/encoding';
+
+// Re-exported under the historical name used across providers, delivery, and tests.
+export { bytesToHex as toHex };
+
 export async function hmacSha256(secret: string, message: string): Promise<Uint8Array> {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -18,11 +23,6 @@ export async function hmacSha256(secret: string, message: string): Promise<Uint8
   return new Uint8Array(sig);
 }
 
-export function toHex(bytes: Uint8Array): string {
-  let hex = '';
-  for (let i = 0; i < bytes.length; i++) hex += bytes[i]!.toString(16).padStart(2, '0');
-  return hex;
-}
 
 // Standard-alphabet base64 with padding, computed manually rather than via btoa. The
 // runtime's btoa cannot be relied on to emit standard base64 (some environments emit the

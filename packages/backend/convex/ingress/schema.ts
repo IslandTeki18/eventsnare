@@ -25,6 +25,14 @@ export const ingressTables = {
     maxRetries: v.number(),
     createdAt: v.number(),
     deletedAt: v.optional(v.number()),
+    // Outbound security (P2). forwardHeaders is an encrypted JSON map of custom headers added
+    // to every forwarded request (values may hold bearer tokens). forwardHeaderKeys mirrors the
+    // map's keys in plaintext so the dashboard can show which headers are set without decrypting.
+    // outboundSigningSecretEncrypted is the HMAC secret used to sign forwarded requests so the
+    // customer can verify they originated from Eventsnare.
+    forwardHeaders: v.optional(v.string()),
+    forwardHeaderKeys: v.optional(v.array(v.string())),
+    outboundSigningSecretEncrypted: v.optional(v.string()),
   }).index('by_workspace', ['workspaceId']),
 
   events: defineTable({

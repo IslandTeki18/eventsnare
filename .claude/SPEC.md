@@ -459,6 +459,21 @@ This section will expand once the service is live. Initial entries:
 2. Hotfix adapter in `src/providers/{name}.ts`.
 3. Backfill: re-verify recent events and re-deliver if previously rejected.
 
+**Rotate the secrets encryption key (`SECRETS_ENCRYPTION_KEY`):**
+All source signing secrets, custom forward headers, and outbound signing secrets are encrypted
+at rest with this AES-256 key (`lib/crypto`). Rotate without downtime:
+1. Generate a new base64-encoded 32-byte key.
+2. Move the current key to the previous slot, set the new key as primary:
+   `npx convex env set SECRETS_ENCRYPTION_KEY_PREVIOUS <current-key>` then
+   `npx convex env set SECRETS_ENCRYPTION_KEY <new-key>`. Decryption falls back to the previous
+   key, so ingress and delivery keep working immediately; new writes use the new key.
+3. Re-encrypt every stored blob with the new key:
+   `npx convex run secretsMigration:reencryptAllSecrets`. Confirm the result reports
+   `failures: []`; re-run if any failed (the job is idempotent).
+4. Remove the previous key: `npx convex env remove SECRETS_ENCRYPTION_KEY_PREVIOUS`.
+5. If a key is ever lost with no previous slot, encrypted secrets are unrecoverable; customers
+   must re-enter signing secrets and outbound secrets must be regenerated.
+
 ---
 
 ## 13. Open Questions

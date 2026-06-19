@@ -3,6 +3,7 @@ import { useAction } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { getProviderMeta } from '@/features/sources/lib/providers';
+import { ProviderSetupGuide } from '@/features/sources/components/ProviderSetupGuide';
 
 // Secret entry + forward URL for a chosen provider (SPEC §10 step 5). Calls the create
 // action, which encrypts the secret server-side before persisting.
@@ -43,11 +44,7 @@ export function SourceForm({ provider, onCreated }: SourceFormProps) {
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4">
-      {meta ? (
-        <p className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-          {meta.guide}
-        </p>
-      ) : null}
+      {meta ? <ProviderSetupGuide provider={provider} /> : null}
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Name</span>

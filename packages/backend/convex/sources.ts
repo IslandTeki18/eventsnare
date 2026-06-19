@@ -9,9 +9,17 @@ import { action, mutation, query, internalMutation, internalQuery } from './_gen
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { internal, api } from './_generated/api';
-import { encryptSecret } from './lib/crypto';
+import { encryptSecret, decryptSecret, generateOutboundSecret } from './lib/crypto';
+import { validateForwardHeaders } from './lib/forwardHeaders';
+import { consumeRateLimit } from './lib/rateLimit';
+import { requireUser } from './lib/auth';
 import { isSupportedProvider } from './providers';
 import { requireWorkspace } from './workspaces';
+
+// Outbound signing secret reveals are sensitive; cap them so a compromised session cannot dump
+// the plaintext in a loop, and audit every reveal.
+const REVEAL_LIMIT = 10;
+const REVEAL_WINDOW_MS = 600_000; // 10 minutes
 
 function ingressPathFor(slug: string, sourceId: string): string {
   return `/in/${slug}/${sourceId}`;
@@ -30,6 +38,10 @@ function toDto(source: Doc<'sources'>, slug: string) {
     createdAt: source.createdAt,
     ingressPath: path,
     ingressUrl: base ? `${base}${path}` : '',
+    // Outbound security (P2). Header values stay encrypted server-side; only the names are
+    // exposed. The outbound signing secret is revealed on demand via revealOutboundSecret.
+    forwardHeaderKeys: source.forwardHeaderKeys ?? [],
+    hasOutboundSecret: source.outboundSigningSecretEncrypted !== undefined,
   };
 }
 
@@ -74,6 +86,7 @@ export const create = action({
     forwardUrl: v.string(),
     signingSecret: v.string(),
     maxRetries: v.optional(v.number()),
+    forwardHeaders: v.optional(v.record(v.string(), v.string())),
   },
   handler: async (
     ctx,
@@ -85,15 +98,41 @@ export const create = action({
     validateForwardUrl(args.forwardUrl);
     const maxRetries = clampRetries(args.maxRetries ?? 7);
     const signingSecretEncrypted = await encryptSecret(args.signingSecret);
+    const headers = await encodeForwardHeaders(args.forwardHeaders);
+    // Every new source is signed by default so customers can verify origin from day one.
+    const outboundSigningSecretEncrypted = await encryptSecret(generateOutboundSecret());
     return await ctx.runMutation(internal.sources.insertSource, {
       provider: args.provider,
       name: args.name,
       forwardUrl: args.forwardUrl,
       signingSecretEncrypted,
       maxRetries,
+      forwardHeaders: headers?.encrypted,
+      forwardHeaderKeys: headers?.keys,
+      outboundSigningSecretEncrypted,
     });
   },
 });
+
+// Validate, encrypt, and extract the key names of a custom-header map. Returns undefined when
+// no map is provided (leaves the field untouched); an empty map clears headers. Keys are
+// trimmed before validation so the stored, validated, and displayed names are identical (and
+// never carry whitespace that fetch would reject at delivery).
+async function encodeForwardHeaders(
+  headers: Record<string, string> | undefined,
+): Promise<{ encrypted: string; keys: string[] } | undefined> {
+  if (headers === undefined) return undefined;
+  const normalized: Record<string, string> = {};
+  for (const [name, value] of Object.entries(headers)) {
+    const key = name.trim();
+    if (key) normalized[key] = value;
+  }
+  validateForwardHeaders(normalized);
+  return {
+    encrypted: await encryptSecret(JSON.stringify(normalized)),
+    keys: Object.keys(normalized),
+  };
+}
 
 export const update = action({
   args: {
@@ -102,18 +141,22 @@ export const update = action({
     forwardUrl: v.optional(v.string()),
     maxRetries: v.optional(v.number()),
     signingSecret: v.optional(v.string()),
+    forwardHeaders: v.optional(v.record(v.string(), v.string())),
   },
   handler: async (ctx, args): Promise<void> => {
     if (args.forwardUrl) validateForwardUrl(args.forwardUrl);
     const signingSecretEncrypted = args.signingSecret
       ? await encryptSecret(args.signingSecret)
       : undefined;
+    const headers = await encodeForwardHeaders(args.forwardHeaders);
     await ctx.runMutation(internal.sources.patchSource, {
       sourceId: args.sourceId,
       name: args.name,
       forwardUrl: args.forwardUrl,
       maxRetries: args.maxRetries === undefined ? undefined : clampRetries(args.maxRetries),
       signingSecretEncrypted,
+      forwardHeaders: headers?.encrypted,
+      forwardHeaderKeys: headers?.keys,
     });
   },
 });
@@ -126,6 +169,33 @@ export const rotateSecret = action({
       sourceId: args.sourceId,
       signingSecretEncrypted,
     });
+  },
+});
+
+// Generate (or replace) the outbound signing secret used to sign forwarded requests. Older
+// sources created before P2 have none until this runs.
+export const rotateOutboundSecret = action({
+  args: { sourceId: v.id('sources') },
+  handler: async (ctx, { sourceId }): Promise<void> => {
+    const outboundSigningSecretEncrypted = await encryptSecret(generateOutboundSecret());
+    await ctx.runMutation(internal.sources.patchSource, {
+      sourceId,
+      outboundSigningSecretEncrypted,
+    });
+  },
+});
+
+// Reveal the plaintext outbound signing secret so the customer can verify our signature. The
+// internal mutation enforces workspace ownership, rate-limits, and audit-logs the reveal before
+// returning the encrypted blob, which is decrypted here in the action.
+export const revealOutboundSecret = action({
+  args: { sourceId: v.id('sources') },
+  handler: async (ctx, { sourceId }): Promise<{ secret: string | null }> => {
+    const { blob } = await ctx.runMutation(internal.sources.claimOutboundSecretReveal, {
+      sourceId,
+    });
+    if (!blob) return { secret: null };
+    return { secret: await decryptSecret(blob) };
   },
 });
 
@@ -142,6 +212,9 @@ export const insertSource = internalMutation({
     forwardUrl: v.string(),
     signingSecretEncrypted: v.string(),
     maxRetries: v.number(),
+    forwardHeaders: v.optional(v.string()),
+    forwardHeaderKeys: v.optional(v.array(v.string())),
+    outboundSigningSecretEncrypted: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const workspace = await requireWorkspace(ctx);
@@ -154,6 +227,9 @@ export const insertSource = internalMutation({
       status: 'active',
       maxRetries: args.maxRetries,
       createdAt: Date.now(),
+      forwardHeaders: args.forwardHeaders,
+      forwardHeaderKeys: args.forwardHeaderKeys,
+      outboundSigningSecretEncrypted: args.outboundSigningSecretEncrypted,
     });
     return {
       sourceId,
@@ -170,6 +246,9 @@ export const patchSource = internalMutation({
     forwardUrl: v.optional(v.string()),
     maxRetries: v.optional(v.number()),
     signingSecretEncrypted: v.optional(v.string()),
+    forwardHeaders: v.optional(v.string()),
+    forwardHeaderKeys: v.optional(v.array(v.string())),
+    outboundSigningSecretEncrypted: v.optional(v.string()),
   },
   handler: async (ctx, { sourceId, ...patch }) => {
     const source = await requireOwnedSource(ctx, sourceId);
@@ -180,7 +259,45 @@ export const patchSource = internalMutation({
     if (patch.signingSecretEncrypted !== undefined) {
       fields.signingSecretEncrypted = patch.signingSecretEncrypted;
     }
+    if (patch.forwardHeaders !== undefined) {
+      fields.forwardHeaders = patch.forwardHeaders;
+      fields.forwardHeaderKeys = patch.forwardHeaderKeys ?? [];
+    }
+    if (patch.outboundSigningSecretEncrypted !== undefined) {
+      fields.outboundSigningSecretEncrypted = patch.outboundSigningSecretEncrypted;
+    }
     await ctx.db.patch(source._id, fields);
+  },
+});
+
+// Ownership-checked, rate-limited, audited claim for a source's encrypted outbound secret, for
+// revealOutboundSecret. Throws when the per-source reveal limit is exceeded.
+export const claimOutboundSecretReveal = internalMutation({
+  args: { sourceId: v.id('sources') },
+  handler: async (ctx, { sourceId }): Promise<{ blob: string | null }> => {
+    const source = await requireOwnedSource(ctx, sourceId);
+    const user = await requireUser(ctx);
+
+    const allowed = await consumeRateLimit(
+      ctx,
+      `reveal:outbound:${sourceId}`,
+      REVEAL_LIMIT,
+      REVEAL_WINDOW_MS,
+      Date.now(),
+    );
+    if (!allowed) {
+      throw new Error('Too many reveals for this source. Try again in a few minutes.');
+    }
+
+    await ctx.db.insert('activityLogs', {
+      actorUserId: user._id,
+      action: 'source.outbound_secret.reveal',
+      targetType: 'source',
+      targetId: sourceId,
+      createdAt: Date.now(),
+    });
+
+    return { blob: source.outboundSigningSecretEncrypted ?? null };
   },
 });
 

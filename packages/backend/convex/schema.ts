@@ -11,6 +11,7 @@ import ingressTables from './ingress/schema';
 import workspacesTables from './workspaces/schema';
 import alertsTables from './alerts/schema';
 import blogTables from './blog/schema';
+import rateLimitsTables from './rateLimits/schema';
 // @scaffold:imports
 
 export default defineSchema({
@@ -26,5 +27,6 @@ export default defineSchema({
   ...workspacesTables,
   ...alertsTables,
   ...blogTables,
+  ...rateLimitsTables,
   // @scaffold:schema
 });

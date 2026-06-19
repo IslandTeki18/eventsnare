@@ -5,7 +5,7 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { ProviderGrid } from '@/features/sources/components/ProviderGrid';
 import { SourceForm } from '@/features/sources/components/SourceForm';
-import { IngressUrlDisplay } from '@/features/sources/components/IngressUrlDisplay';
+import { ProviderSetupGuide } from '@/features/sources/components/ProviderSetupGuide';
 import { TestEventButton } from '@/features/sources/components/TestEventButton';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
@@ -77,10 +77,11 @@ function VerifyStep({ sourceId }: { sourceId: Id<'sources'> }) {
   return (
     <div className="flex flex-col gap-4">
       {source ? (
-        <div>
-          <p className="mb-2 text-sm font-medium">Paste this URL into your provider:</p>
-          <IngressUrlDisplay url={source.ingressUrl} path={source.ingressPath} />
-        </div>
+        <ProviderSetupGuide
+          provider={source.provider}
+          ingressUrl={source.ingressUrl}
+          ingressPath={source.ingressPath}
+        />
       ) : null}
 
       <div className="flex items-center gap-2">

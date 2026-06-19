@@ -5,7 +5,8 @@ import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getProviderMeta } from '@/features/sources/lib/providers';
-import { IngressUrlDisplay } from '@/features/sources/components/IngressUrlDisplay';
+import { ProviderSetupGuide } from '@/features/sources/components/ProviderSetupGuide';
+import { OutboundSecuritySettings } from '@/features/sources/components/OutboundSecuritySettings';
 import { TestEventButton } from '@/features/sources/components/TestEventButton';
 
 export function SourceDetail() {
@@ -46,15 +47,6 @@ export function SourceDetail() {
         <StatusBadge status={source.status} />
       </div>
 
-      <section className="mb-6">
-        <h2 className="mb-2 text-sm font-medium">Ingress URL</h2>
-        <IngressUrlDisplay url={source.ingressUrl} path={source.ingressPath} />
-        <p className="mt-2 text-xs text-muted-foreground">
-          Paste this into your {getProviderMeta(source.provider)?.name ?? source.provider}{' '}
-          webhook settings.
-        </p>
-      </section>
-
       <div className="mb-8 flex flex-wrap gap-2">
         <TestEventButton sourceId={id} />
         <Link
@@ -91,6 +83,15 @@ export function SourceDetail() {
           Delete
         </button>
       </div>
+
+      <section className="mb-6">
+        <h2 className="mb-2 text-sm font-medium">Connection guide</h2>
+        <ProviderSetupGuide
+          provider={source.provider}
+          ingressUrl={source.ingressUrl}
+          ingressPath={source.ingressPath}
+        />
+      </section>
 
       <section className="mb-6 flex flex-col gap-2">
         <h2 className="text-sm font-medium">Forward URL</h2>
@@ -137,6 +138,15 @@ export function SourceDetail() {
           </button>
         </div>
       </section>
+
+      <div className="mt-8 border-t border-border pt-8">
+        <OutboundSecuritySettings
+          key={source.forwardHeaderKeys.join(',')}
+          sourceId={id}
+          forwardHeaderKeys={source.forwardHeaderKeys}
+          hasOutboundSecret={source.hasOutboundSecret}
+        />
+      </div>
     </div>
   );
 }

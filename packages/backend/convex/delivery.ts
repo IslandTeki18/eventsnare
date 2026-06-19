@@ -11,6 +11,9 @@ import { v } from 'convex/values';
 import { internalAction, internalMutation, internalQuery } from './_generated/server';
 import { internal } from './_generated/api';
 import { claimOnce, bumpFailBurst } from './alerts/dispatch';
+import { decryptSecret } from './lib/crypto';
+import { isReservedForwardHeader } from './lib/forwardHeaders';
+import { hmacSha256, toHex } from './providers/hmac';
 
 // SPEC FR-OUT-6 backoff: 10s, 30s, 2m, 10m, 1h, 6h, 24h. Index = attemptNumber - 1.
 const BACKOFF_MS = [
@@ -38,6 +41,8 @@ export const getDeliveryContext = internalQuery({
       originalSignature: event.originalSignature,
       forwardUrl: source.forwardUrl,
       provider: source.provider,
+      forwardHeaders: source.forwardHeaders,
+      outboundSigningSecretEncrypted: source.outboundSigningSecretEncrypted,
     };
   },
 });
@@ -59,18 +64,44 @@ export const attempt = internalAction({
     const originalContentType = parseContentType(fwd.headersJson);
     const startedAt = Date.now();
 
+    // Reserved headers Eventsnare controls; custom headers may not override them (FR P2).
+    const headers: Record<string, string> = {
+      'Content-Type': originalContentType,
+      'X-Eventsnare-Event-Id': fwd.eventId,
+      'X-Eventsnare-Attempt': String(attemptNumber),
+      'X-Eventsnare-Source': fwd.sourceId,
+      'X-Eventsnare-Original-Signature': fwd.originalSignature ?? '',
+    };
+
+    // Outbound signature: HMAC-SHA256 over `${timestamp}.${body}`, Stripe-style, so customers
+    // can verify the request came from Eventsnare. Only present once the source has a secret.
+    // A crypto failure (e.g. key rotation, corrupted blob) must NOT block delivery: skip the
+    // signature rather than throwing, matching the forward-headers fail-open behavior below.
+    if (fwd.outboundSigningSecretEncrypted) {
+      try {
+        const secret = await decryptSecret(fwd.outboundSigningSecretEncrypted);
+        const t = Math.floor(startedAt / 1000);
+        const signature = toHex(await hmacSha256(secret, `${t}.${body}`));
+        headers['X-Eventsnare-Signature'] = `t=${t},v1=${signature}`;
+      } catch {
+        // sign-best-effort: deliver unsigned rather than dead-letter the event
+      }
+    }
+
+    // Custom forward headers (decrypted), merged last but never over a reserved name.
+    if (fwd.forwardHeaders) {
+      const custom = await decryptForwardHeaders(fwd.forwardHeaders);
+      for (const [key, value] of Object.entries(custom)) {
+        if (!isReservedForwardHeader(key)) headers[key] = value;
+      }
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
     try {
       const response = await fetch(fwd.forwardUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': originalContentType,
-          'X-Eventsnare-Event-Id': fwd.eventId,
-          'X-Eventsnare-Attempt': String(attemptNumber),
-          'X-Eventsnare-Source': fwd.sourceId,
-          'X-Eventsnare-Original-Signature': fwd.originalSignature ?? '',
-        },
+        headers,
         body,
         signal: controller.signal,
       });
@@ -96,6 +127,19 @@ export const attempt = internalAction({
     }
   },
 });
+
+async function decryptForwardHeaders(blob: string): Promise<Record<string, string>> {
+  try {
+    const json = await decryptSecret(blob);
+    const parsed = JSON.parse(json) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, string>;
+    }
+  } catch {
+    // malformed or undecryptable headers must not block delivery
+  }
+  return {};
+}
 
 function parseContentType(headersJson?: string): string {
   if (!headersJson) return 'application/json';
