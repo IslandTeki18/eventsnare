@@ -306,6 +306,9 @@ importers:
       '@types/react':
         specifier: ^18.3.13
         version: 18.3.29
+      convex:
+        specifier: ^1.17.0
+        version: 1.39.1(@clerk/clerk-react@5.61.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1

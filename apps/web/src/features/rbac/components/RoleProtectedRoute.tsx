@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router';
 import { ProtectedRoute } from '@/features/auth';
-import { useHasRole } from '@/features/rbac/hooks/useHasRole';
+import { useHasRole } from '@eventsnare/ui/web';
 import type { Role } from '@/features/rbac/lib/permissions';
 
 interface RoleProtectedRouteProps {
