@@ -4,6 +4,11 @@
     "noEmit": true,
     "types": []
   },
-  "include": ["tokens/**/*.ts", "web/**/*.ts", "mobile/**/*.ts"],
+  "include": [
+    "tokens/**/*.ts",
+    "web/**/*.ts",
+    "web/**/*.tsx",
+    "mobile/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }

@@ -1,1 +1,1 @@
-export {};
+export { ProtectedRoute } from './ProtectedRoute';
