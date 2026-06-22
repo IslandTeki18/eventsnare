@@ -20,7 +20,7 @@ export function getStoredTheme(): Theme {
   return DEFAULT_THEME;
 }
 
-export function setStoredTheme(theme: Theme): void {
+ function setStoredTheme(theme: Theme): void {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(STORAGE_KEY, theme);

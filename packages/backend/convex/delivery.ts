@@ -97,6 +97,22 @@ export const attempt = internalAction({
       }
     }
 
+    // Local-dev forwarding (P5): if a CLI `eventsnare listen` session is active for this source,
+    // hand the fully-built request to that session's queue instead of POSTing to the production
+    // forward URL. The CLI drains the queue and reports the outcome (cliDelivery.ackDelivery).
+    const session = await ctx.runQuery(internal.cliSessions.findActiveSession, {
+      sourceId: fwd.sourceId,
+    });
+    if (session) {
+      await ctx.runMutation(internal.cliDelivery.createLocalDelivery, {
+        eventId,
+        sessionId: session.sessionId,
+        attemptNumber,
+        headersJson: JSON.stringify(headers),
+      });
+      return;
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
     try {

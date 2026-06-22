@@ -13,6 +13,7 @@ import { SourcesList, SourceCreate, SourceDetail } from '@/features/sources';
 import { EventsList, EventDetail } from '@/features/events';
 import { Analytics } from '@/features/analytics';
 import { Usage } from '@/features/usage';
+import { CliTokens } from '@/features/cli-tokens';
 // @scaffold:imports
 
 export function App() {
@@ -45,6 +46,7 @@ export function App() {
         />
         <Route path="/analytics" element={<DashboardLayout><Analytics /></DashboardLayout>} />
         <Route path="/usage" element={<DashboardLayout><Usage /></DashboardLayout>} />
+        <Route path="/cli" element={<DashboardLayout><CliTokens /></DashboardLayout>} />
         <Route path="/billing" element={<DashboardLayout><Billing /></DashboardLayout>} />
         <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
         <Route path="/profile" element={<DashboardLayout><Profile /></DashboardLayout>} />
