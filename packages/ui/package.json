@@ -7,7 +7,8 @@
   "exports": {
     "./tokens": "./tokens/index.ts",
     "./web": "./web/index.ts",
-    "./mobile": "./mobile/index.ts"
+    "./mobile": "./mobile/index.ts",
+    "./tailwind-preset": "./tailwind/preset.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
