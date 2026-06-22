@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAction, useQuery } from 'convex/react';
+import { DataTable } from '@/components/DataTable';
+import { LoadingState } from '@/components/LoadingState';
 import { UserRoleCell } from '@/features/admin-dashboard/components/UserRoleCell';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
@@ -32,7 +34,7 @@ export function AdminUsers() {
   };
 
   if (users === undefined) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <LoadingState />;
   }
 
   return (
@@ -41,26 +43,15 @@ export function AdminUsers() {
       {users.length === 0 ? (
         <p className="text-sm text-muted-foreground">No users found, or access denied.</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border">
-          <table className="min-w-full divide-y divide-border text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  User
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Roles
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Status
-                </th>
-                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-background">
-              {(users as UserRow[]).map((row) => {
+        <DataTable
+          columns={[
+            { label: 'User' },
+            { label: 'Roles' },
+            { label: 'Status' },
+            { label: 'Actions', align: 'right' },
+          ]}
+        >
+          {(users as UserRow[]).map((row) => {
                 const displayName = row.user.name ?? row.user.email;
                 return (
                   <tr key={row.user._id}>
@@ -114,9 +105,7 @@ export function AdminUsers() {
                   </tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+        </DataTable>
       )}
     </div>
   );

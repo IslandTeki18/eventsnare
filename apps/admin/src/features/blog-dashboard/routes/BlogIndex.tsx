@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery } from 'convex/react';
+import { DataTable } from '@/components/DataTable';
+import { LoadingState } from '@/components/LoadingState';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 
@@ -30,7 +32,7 @@ export function BlogIndex() {
   };
 
   if (posts === undefined) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <LoadingState />;
   }
 
   return (
@@ -49,26 +51,15 @@ export function BlogIndex() {
       {posts.length === 0 ? (
         <p className="text-sm text-muted-foreground">No posts yet.</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border">
-          <table className="min-w-full divide-y divide-border text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Title
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Status
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Published
-                </th>
-                <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-background">
-              {posts.map((post) => (
+        <DataTable
+          columns={[
+            { label: 'Title' },
+            { label: 'Status' },
+            { label: 'Published' },
+            { label: 'Actions', align: 'right' },
+          ]}
+        >
+          {posts.map((post) => (
                 <tr key={post._id}>
                   <td className="px-4 py-3">
                     <p className="font-medium">{post.title}</p>
@@ -108,9 +99,7 @@ export function BlogIndex() {
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+        </DataTable>
       )}
     </div>
   );
