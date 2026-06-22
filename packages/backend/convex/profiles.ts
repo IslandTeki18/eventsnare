@@ -1,24 +1,32 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import type { QueryCtx, MutationCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
+import { getCurrentUser, requireUser } from './lib/auth';
+
+function findProfile(ctx: QueryCtx | MutationCtx, userId: Id<'users'>) {
+  return ctx.db
+    .query('userProfiles')
+    .withIndex('byUserId', (q) => q.eq('userId', userId))
+    .unique();
+}
+
+async function resolveAvatarUrl(
+  ctx: QueryCtx | MutationCtx,
+  profile: { avatarStorageId?: Id<'_storage'> } | null,
+) {
+  return profile?.avatarStorageId
+    ? await ctx.storage.getUrl(profile.avatarStorageId)
+    : null;
+}
 
 export const getMyProfile = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return null;
-    const profile = await ctx.db
-      .query('userProfiles')
-      .withIndex('byUserId', (q) => q.eq('userId', user._id))
-      .unique();
-    const avatarUrl = profile?.avatarStorageId
-      ? await ctx.storage.getUrl(profile.avatarStorageId)
-      : null;
-    return { user, profile, avatarUrl };
+    const profile = await findProfile(ctx, user._id);
+    return { user, profile, avatarUrl: await resolveAvatarUrl(ctx, profile) };
   },
 });
 
@@ -27,14 +35,8 @@ export const getProfileByUserId = query({
   handler: async (ctx, { userId }) => {
     const user = await ctx.db.get(userId);
     if (!user) return null;
-    const profile = await ctx.db
-      .query('userProfiles')
-      .withIndex('byUserId', (q) => q.eq('userId', userId))
-      .unique();
-    const avatarUrl = profile?.avatarStorageId
-      ? await ctx.storage.getUrl(profile.avatarStorageId)
-      : null;
-    return { user, profile, avatarUrl };
+    const profile = await findProfile(ctx, userId);
+    return { user, profile, avatarUrl: await resolveAvatarUrl(ctx, profile) };
   },
 });
 
@@ -45,17 +47,8 @@ export const upsertMyProfile = mutation({
     website: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
-    if (!user) throw new Error('User record not yet synced from Clerk');
-    const existing = await ctx.db
-      .query('userProfiles')
-      .withIndex('byUserId', (q) => q.eq('userId', user._id))
-      .unique();
+    const user = await requireUser(ctx);
+    const existing = await findProfile(ctx, user._id);
     if (existing) {
       await ctx.db.patch(existing._id, args);
       return existing._id;
@@ -71,8 +64,7 @@ export const upsertMyProfile = mutation({
 export const generateAvatarUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
+    await requireUser(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -80,17 +72,8 @@ export const generateAvatarUploadUrl = mutation({
 export const setMyAvatar = mutation({
   args: { storageId: v.id('_storage') },
   handler: async (ctx, { storageId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
-    if (!user) throw new Error('User record not yet synced from Clerk');
-    const existing = await ctx.db
-      .query('userProfiles')
-      .withIndex('byUserId', (q) => q.eq('userId', user._id))
-      .unique();
+    const user = await requireUser(ctx);
+    const existing = await findProfile(ctx, user._id);
     if (existing) {
       if (existing.avatarStorageId && existing.avatarStorageId !== storageId) {
         await ctx.storage.delete(existing.avatarStorageId);

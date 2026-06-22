@@ -1,17 +1,13 @@
 import { v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
+import { getCurrentUser, requireUser } from './lib/auth';
 
 const DEFAULT_LIMIT = 25;
 
 export const listMyRecent = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, { limit }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return [];
     return await ctx.db
       .query('notifications')
@@ -24,12 +20,7 @@ export const listMyRecent = query({
 export const getMyUnreadCount = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return 0;
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return 0;
     const rows = await ctx.db
       .query('notifications')
@@ -42,13 +33,7 @@ export const getMyUnreadCount = query({
 export const markRead = mutation({
   args: { notificationId: v.id('notifications') },
   handler: async (ctx, { notificationId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
-    if (!user) throw new Error('User record not yet synced from Clerk');
+    const user = await requireUser(ctx);
     const notification = await ctx.db.get(notificationId);
     if (!notification || notification.userId !== user._id) {
       throw new Error('Notification not found');
@@ -62,13 +47,7 @@ export const markRead = mutation({
 export const markAllRead = mutation({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
-    if (!user) return;
+    const user = await requireUser(ctx);
     const unread = await ctx.db
       .query('notifications')
       .withIndex('byUserUnread', (q) => q.eq('userId', user._id).eq('readAt', undefined))

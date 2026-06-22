@@ -1,21 +1,12 @@
 import { v } from 'convex/values';
-import type { MutationCtx, QueryCtx } from './_generated/server';
+import type { MutationCtx } from './_generated/server';
 import { internalMutation, internalQuery, mutation, query } from './_generated/server';
+import { getCurrentUser } from './lib/auth';
 
 const keysValidator = v.object({
   p256dh: v.string(),
   auth: v.string(),
 });
-
-/** Resolve the Convex user row for the authenticated caller, or null. */
-async function getCurrentUser(ctx: QueryCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) return null;
-  return await ctx.db
-    .query('users')
-    .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-    .unique();
-}
 
 /**
  * Resolve the caller's user row, creating it on first write if the Clerk

@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
 import type { QueryCtx, MutationCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
+import { getCurrentUser, requireUser } from './lib/auth';
 
 export const DEFAULT_ROLES: Array<{
   name: string;
@@ -24,15 +25,6 @@ export const DEFAULT_ROLES: Array<{
     permissions: ['read:all'],
   },
 ];
-
-async function getCurrentUserOrNull(ctx: QueryCtx): Promise<Doc<'users'> | null> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) return null;
-  return await ctx.db
-    .query('users')
-    .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-    .unique();
-}
 
 async function getRolesForUser(
   ctx: QueryCtx,
@@ -62,10 +54,22 @@ async function getPermissionsForRoles(
   return Array.from(out);
 }
 
+async function seedRoles(ctx: MutationCtx): Promise<void> {
+  for (const role of DEFAULT_ROLES) {
+    const existing = await ctx.db
+      .query('roles')
+      .withIndex('byName', (q) => q.eq('name', role.name))
+      .unique();
+    if (!existing) {
+      await ctx.db.insert('roles', role);
+    }
+  }
+}
+
 export const getMyRoles = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getCurrentUserOrNull(ctx);
+    const user = await getCurrentUser(ctx);
     if (!user) return { roles: [] as string[], permissions: [] as string[] };
     const roles = await getRolesForUser(ctx, user._id);
     const permissions = await getPermissionsForRoles(ctx, roles);
@@ -76,7 +80,7 @@ export const getMyRoles = query({
 export const userHasRole = query({
   args: { roleName: v.string() },
   handler: async (ctx, { roleName }) => {
-    const user = await getCurrentUserOrNull(ctx);
+    const user = await getCurrentUser(ctx);
     if (!user) return false;
     const assignment = await ctx.db
       .query('userRoles')
@@ -91,7 +95,7 @@ export const userHasRole = query({
 export const userHasPermission = query({
   args: { permission: v.string() },
   handler: async (ctx, { permission }) => {
-    const user = await getCurrentUserOrNull(ctx);
+    const user = await getCurrentUser(ctx);
     if (!user) return false;
     const roles = await getRolesForUser(ctx, user._id);
     const permissions = await getPermissionsForRoles(ctx, roles);
@@ -129,30 +133,14 @@ export const revokeRole = internalMutation({
 export const seedDefaultRoles = internalMutation({
   args: {},
   handler: async (ctx) => {
-    for (const role of DEFAULT_ROLES) {
-      const existing = await ctx.db
-        .query('roles')
-        .withIndex('byName', (q) => q.eq('name', role.name))
-        .unique();
-      if (!existing) {
-        await ctx.db.insert('roles', role);
-      }
-    }
+    await seedRoles(ctx);
   },
 });
 
 export const seedDefaultRolesPublic = mutation({
   args: {},
   handler: async (ctx) => {
-    for (const role of DEFAULT_ROLES) {
-      const existing = await ctx.db
-        .query('roles')
-        .withIndex('byName', (q) => q.eq('name', role.name))
-        .unique();
-      if (!existing) {
-        await ctx.db.insert('roles', role);
-      }
-    }
+    await seedRoles(ctx);
   },
 });
 
@@ -160,13 +148,7 @@ export async function requireRole(
   ctx: QueryCtx | MutationCtx,
   roleName: string,
 ): Promise<Doc<'users'>> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error('Not authenticated');
-  const user = await ctx.db
-    .query('users')
-    .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-    .unique();
-  if (!user) throw new Error('User record not yet synced from Clerk');
+  const user = await requireUser(ctx);
   const assignment = await ctx.db
     .query('userRoles')
     .withIndex('byUserAndRole', (q) =>
@@ -183,13 +165,7 @@ export async function requirePermission(
   ctx: QueryCtx | MutationCtx,
   permission: string,
 ): Promise<Doc<'users'>> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error('Not authenticated');
-  const user = await ctx.db
-    .query('users')
-    .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-    .unique();
-  if (!user) throw new Error('User record not yet synced from Clerk');
+  const user = await requireUser(ctx);
   const assignments = await ctx.db
     .query('userRoles')
     .withIndex('byUserId', (q) => q.eq('userId', user._id))

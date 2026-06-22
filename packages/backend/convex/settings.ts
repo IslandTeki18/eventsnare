@@ -1,16 +1,25 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import type { QueryCtx, MutationCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
+import { getCurrentUser, requireUser } from './lib/auth';
+
+function findSetting(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<'users'>,
+  key: string,
+) {
+  return ctx.db
+    .query('userSettings')
+    .withIndex('byUserAndKey', (q) => q.eq('userId', userId).eq('key', key))
+    .unique();
+}
 
 export const getMySettings = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [] as Array<{ key: string; value: string }>;
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
-    if (!user) return [];
+    const user = await getCurrentUser(ctx);
+    if (!user) return [] as Array<{ key: string; value: string }>;
     const rows = await ctx.db
       .query('userSettings')
       .withIndex('byUserId', (q) => q.eq('userId', user._id))
@@ -22,17 +31,9 @@ export const getMySettings = query({
 export const getMySetting = query({
   args: { key: v.string() },
   handler: async (ctx, { key }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return null;
-    const row = await ctx.db
-      .query('userSettings')
-      .withIndex('byUserAndKey', (q) => q.eq('userId', user._id).eq('key', key))
-      .unique();
+    const row = await findSetting(ctx, user._id, key);
     return row?.value ?? null;
   },
 });
@@ -40,17 +41,8 @@ export const getMySetting = query({
 export const setMySetting = mutation({
   args: { key: v.string(), value: v.string() },
   handler: async (ctx, { key, value }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
-    if (!user) throw new Error('User record not yet synced from Clerk');
-    const existing = await ctx.db
-      .query('userSettings')
-      .withIndex('byUserAndKey', (q) => q.eq('userId', user._id).eq('key', key))
-      .unique();
+    const user = await requireUser(ctx);
+    const existing = await findSetting(ctx, user._id, key);
     if (existing) {
       await ctx.db.patch(existing._id, { value });
       return existing._id;
@@ -62,17 +54,8 @@ export const setMySetting = mutation({
 export const unsetMySetting = mutation({
   args: { key: v.string() },
   handler: async (ctx, { key }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
-    const user = await ctx.db
-      .query('users')
-      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
-      .unique();
-    if (!user) return;
-    const existing = await ctx.db
-      .query('userSettings')
-      .withIndex('byUserAndKey', (q) => q.eq('userId', user._id).eq('key', key))
-      .unique();
+    const user = await requireUser(ctx);
+    const existing = await findSetting(ctx, user._id, key);
     if (existing) await ctx.db.delete(existing._id);
   },
 });
