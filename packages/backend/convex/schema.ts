@@ -12,6 +12,7 @@ import workspacesTables from './workspaces/schema';
 import alertsTables from './alerts/schema';
 import blogTables from './blog/schema';
 import rateLimitsTables from './rateLimits/schema';
+import cliAuthTables from './cli-auth/schema';
 // @scaffold:imports
 
 export default defineSchema({
@@ -28,5 +29,6 @@ export default defineSchema({
   ...alertsTables,
   ...blogTables,
   ...rateLimitsTables,
+  ...cliAuthTables,
   // @scaffold:schema
 });

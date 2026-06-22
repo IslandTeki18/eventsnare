@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useHasRole } from '@/features/rbac/hooks/useHasRole';
+import { useHasRole } from '@eventsnare/ui/web';
 import type { Role } from '@/features/rbac/lib/permissions';
 
 interface RequireRoleProps {

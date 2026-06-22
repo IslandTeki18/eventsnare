@@ -12,6 +12,7 @@ const navItems: NavItem[] = [
   { label: 'Events', to: '/events' },
   { label: 'Analytics', to: '/analytics' },
   { label: 'Usage', to: '/usage' },
+  { label: 'CLI', to: '/cli' },
   { label: 'Billing', to: '/billing' },
   { label: 'Settings', to: '/settings' },
   // @scaffold:nav-items

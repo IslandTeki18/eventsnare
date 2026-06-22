@@ -4,7 +4,6 @@ export type { Theme } from '@/features/theme-settings/lib/theme';
 export {
   applyTheme,
   getStoredTheme,
-  setStoredTheme,
   getEffectiveTheme,
   getTheme,
   setTheme,

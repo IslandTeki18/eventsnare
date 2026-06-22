@@ -1,6 +1,6 @@
 # Value Features — Status and Remaining Work
 
-**Last updated:** 2026-06-17
+**Last updated:** 2026-06-22
 **Scope:** Differentiators that make the Indie ($29/mo) tier worth paying for, beyond the
 spec's baseline (which the dashboard already implements in full).
 **Source plan:** five-workstream roadmap (P1–P5), prioritized by impact-per-effort for a solo dev.
@@ -62,9 +62,36 @@ status code) denormalized onto the event row.
 - UI: search bar + status-code filter in `EventFilters.tsx`; `EventsList.tsx` switches between
   `events.list` (browse) and `events.search` (term present); coverage caption for large payloads
 
+### P5 — Local development forwarding CLI (flagship)
+`eventsnare listen` forwards live webhooks to `localhost`, like the Stripe CLI. While a listen
+session is active for a source, delivery is routed to the connected CLI instead of the production
+forward URL (replace semantics); the event stays durably persisted and replayable. Local failures
+are recorded but never enter the production retry/dead-letter schedule.
+
+- Schema: `cli-auth/schema.ts` — `cliTokens` (SHA-256 hash only), `cliSessions` (heartbeat +
+  capability secret), `localDeliveries` (per-session queue). Spread into root `schema.ts`.
+- `lib/cliAuth.ts` (+ `lib/cliAuth.test.ts`) — token generation (`escli_` prefix), SHA-256
+  hashing, session-secret generation (all action-context only).
+- `cliTokens.ts` — Clerk-authed `issueToken`/`listTokens`/`revokeToken` (audited via
+  `activityLogs`, rate-limited via `consumeRateLimit`); revoke cascades to end live sessions.
+- `cliSessions.ts` — token-arg-authed `validateToken`/`listSources`/`registerSession`,
+  `heartbeat`/`endSession`, and `findActiveSession` (the routing hook).
+- `cliDelivery.ts` — `createLocalDelivery` (called from `delivery.attempt`), `pending` (reactive
+  subscription target), `claimDelivery`/`ackDelivery` (records `deliveryAttempts` + `bumpDeliveryStats`,
+  no backoff), `replayEvent`.
+- `delivery.ts` — routing interception before the production `fetch`: active session → hand the
+  fully-built request (byte-for-byte body + `X-Eventsnare-*` headers + signature) to the session
+  queue and return.
+- `crons.ts` — minutely sweeps: expire abandoned `localDeliveries` (reset stuck events) and end
+  stale `cliSessions`.
+- UI: `apps/web/src/features/cli-tokens/` (mint-once dialog, list, revoke); `/cli` nav route.
+- CLI: `packages/cli` (`@eventsnare/cli`, bin `eventsnare`) — `login`/`listen`/`replay`,
+  WebSocket subscription via `ConvexClient`, byte-for-byte forward with a 30s timeout.
+
 ### Cross-cutting — crons
 `crons.ts` created: bounded daily retention sweeps for `deliveryStatsHourly` and stale
-`rateLimits` buckets.
+`rateLimits` buckets, plus minutely P5 sweeps for abandoned local deliveries and stale CLI
+sessions.
 
 ### Review hardening (applied after code review of P1/P2)
 - Signing failure is fail-open (never dead-letters an event)
@@ -79,7 +106,7 @@ status code) denormalized onto the event row.
 
 ---
 
-## Required action before P2/P3/P4 ship
+## Required action before P2/P3/P4/P5 ship
 
 New Convex files (`secretsMigration.ts`, `analytics.ts`, `searchTextMigration.ts`, `crons.ts`)
 and new schema fields/tables (`forwardHeaders*`, `outboundSigningSecretEncrypted`,
@@ -102,27 +129,23 @@ After deploy:
 - **P3:** drive events via the stress harness and confirm `deliveryStatsHourly` counts and
   derived p50/p95 reconcile against raw `deliveryAttempts`; confirm `/analytics` and the
   per-source Analytics tab render.
+- **P5:** new tables (`cliTokens`, `cliSessions`, `localDeliveries`) and functions
+  (`cliTokens.*`, `cliSessions.*`, `cliDelivery.*`) need codegen + deploy before the web
+  `/cli` screen and the CLI resolve. Then: mint a token in the dashboard, `eventsnare login
+  --token <t> --url <deployment>`, `eventsnare listen --source <id> --forward
+  http://localhost:3000/webhook`, send a test event, and confirm byte-for-byte arrival at
+  localhost with the `X-Eventsnare-*` headers + `X-Eventsnare-Signature`; confirm the
+  production forward URL is NOT hit; revoke the token and confirm the CLI exits within one
+  heartbeat. The CLI builds against string function references (no backend codegen needed):
+  `pnpm --filter @eventsnare/cli build`.
 
 ---
 
 ## Remaining
 
-### P5 — Local development forwarding CLI (flagship)
-`eventsnare listen` forwards live webhooks to `localhost`, like the Stripe CLI. Strongest reason
-a developer pays and stays; largest build, so it ships last.
-
-- New `packages/cli` (or `apps/cli`).
-- Auth: CLI device-token flow — `cliTokens` table + issue/revoke mutations + a dashboard screen
-  to mint a token.
-- Transport: CLI long-polls or subscribes via the Convex client to a per-token delivery queue;
-  backend routes delivery to an active local listener (reuse the scheduled-delivery model, add a
-  local-listener target rather than rebuilding retry logic).
-- Commands: `login`, `listen --source <id> --forward http://localhost:3000/webhook`, `replay`.
-- Preserve byte-for-byte body and the `X-Eventsnare-*` headers as in `delivery.ts`.
-- **Effort:** ~1.5–2 weeks. **Risk:** high (transport). Prototype Convex subscription vs
-  long-poll before committing.
-- **Verify:** `login`, `listen` against a test source, send a test event, confirm byte-for-byte
-  arrival at localhost with correct headers; confirm token revoke stops delivery.
+All five workstreams (P1–P5) are implemented. Remaining work is the codegen + deploy and the
+end-to-end verification in "Required action before P2/P3/P4/P5 ship" above, plus the operational
+follow-ups below.
 
 ---
 
