@@ -3,7 +3,7 @@
 // the outbound signature, or transport headers). Validation runs at the source mutation; the
 // delivery action also skips reserved names defensively when merging.
 
-export const RESERVED_HEADER_PREFIX = 'x-eventsnare-';
+const RESERVED_HEADER_PREFIX = 'x-eventsnare-';
 
 const RESERVED_EXACT = new Set(['content-type', 'content-length', 'host']);
 

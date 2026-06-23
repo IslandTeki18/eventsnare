@@ -1,9 +1,5 @@
 import { httpAction } from './_generated/server';
 
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -39,7 +35,7 @@ export const waitlistSignup = httpAction(async (_ctx, request) => {
     ? (body as Record<string, unknown>).email
     : undefined;
 
-  if (typeof email !== 'string' || !isValidEmail(email)) {
+  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return new Response(
       JSON.stringify({ error: 'Invalid email' }),
       { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }

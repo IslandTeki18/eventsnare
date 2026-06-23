@@ -3,7 +3,7 @@
 // Monthly event quotas per plan tier. `workspaces.plan` is a free-form string; unknown plans
 // fall back to the free limit so an unrecognized value can never grant unbounded quota.
 
-export const PLAN_LIMITS: Record<string, number> = {
+const PLAN_LIMITS: Record<string, number> = {
   free: 10_000,
   indie: 250_000,
   startup: 2_000_000,
