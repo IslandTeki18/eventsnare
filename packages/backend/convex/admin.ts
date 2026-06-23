@@ -113,19 +113,6 @@ export const listRecentActivity = query({
   },
 });
 
-export const getSystemStatus = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-    return {
-      convexDeploymentUrl: process.env.CONVEX_CLOUD_URL ?? process.env.CONVEX_SITE_URL ?? 'unknown',
-      uptime: 'online',
-      checkedAt: Date.now(),
-    };
-  },
-});
-
 export const setUserRole = mutation({
   args: { userId: v.id('users'), roleName: v.string() },
   handler: async (ctx, { userId, roleName }) => {

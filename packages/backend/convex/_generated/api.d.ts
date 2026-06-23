@@ -49,7 +49,6 @@ import type * as providers_types from "../providers/types.js";
 import type * as push from "../push.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as rbac from "../rbac.js";
-import type * as searchTextMigration from "../searchTextMigration.js";
 import type * as secretsMigration from "../secretsMigration.js";
 import type * as settings from "../settings.js";
 import type * as sources from "../sources.js";
@@ -109,7 +108,6 @@ declare const fullApi: ApiFromModules<{
   push: typeof push;
   pushSubscriptions: typeof pushSubscriptions;
   rbac: typeof rbac;
-  searchTextMigration: typeof searchTextMigration;
   secretsMigration: typeof secretsMigration;
   settings: typeof settings;
   sources: typeof sources;
