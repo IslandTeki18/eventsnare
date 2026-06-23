@@ -301,31 +301,28 @@ export const claimOutboundSecretReveal = internalMutation({
   },
 });
 
-export const pause = mutation({
-  args: { sourceId: v.id('sources') },
-  handler: async (ctx, { sourceId }) => {
-    const source = await requireOwnedSource(ctx, sourceId);
-    await ctx.db.patch(source._id, { status: 'paused' });
-  },
-});
+// Status toggles share one shape: resolve the owned source, then patch. patch is a thunk so
+// softDelete's deletedAt is stamped at call time, not module load.
+function statusMutation(patch: () => Partial<Doc<'sources'>>) {
+  return mutation({
+    args: { sourceId: v.id('sources') },
+    handler: async (ctx, { sourceId }) => {
+      const source = await requireOwnedSource(ctx, sourceId);
+      await ctx.db.patch(source._id, patch());
+    },
+  });
+}
 
-export const resume = mutation({
-  args: { sourceId: v.id('sources') },
-  handler: async (ctx, { sourceId }) => {
-    const source = await requireOwnedSource(ctx, sourceId);
-    await ctx.db.patch(source._id, { status: 'active' });
-  },
-});
+export const pause = statusMutation(() => ({ status: 'paused' }));
+
+export const resume = statusMutation(() => ({ status: 'active' }));
 
 // Soft delete: status flips and deletedAt is stamped. A cron hard-deletes after 30 days
 // (FR-SRC-6); that sweep is a separate slice.
-export const softDelete = mutation({
-  args: { sourceId: v.id('sources') },
-  handler: async (ctx, { sourceId }) => {
-    const source = await requireOwnedSource(ctx, sourceId);
-    await ctx.db.patch(source._id, { status: 'deleted', deletedAt: Date.now() });
-  },
-});
+export const softDelete = statusMutation(() => ({
+  status: 'deleted',
+  deletedAt: Date.now(),
+}));
 
 async function requireOwnedSource(
   ctx: MutationCtx | QueryCtx,

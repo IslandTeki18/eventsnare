@@ -26,6 +26,19 @@ export const DEFAULT_ROLES: Array<{
   },
 ];
 
+function findAssignment(
+  ctx: QueryCtx,
+  userId: Id<'users'>,
+  roleName: string,
+) {
+  return ctx.db
+    .query('userRoles')
+    .withIndex('byUserAndRole', (q) =>
+      q.eq('userId', userId).eq('roleName', roleName),
+    )
+    .unique();
+}
+
 async function getRolesForUser(
   ctx: QueryCtx,
   userId: Id<'users'>,
@@ -82,13 +95,7 @@ export const userHasRole = query({
   handler: async (ctx, { roleName }) => {
     const user = await getCurrentUser(ctx);
     if (!user) return false;
-    const assignment = await ctx.db
-      .query('userRoles')
-      .withIndex('byUserAndRole', (q) =>
-        q.eq('userId', user._id).eq('roleName', roleName),
-      )
-      .unique();
-    return assignment !== null;
+    return (await findAssignment(ctx, user._id, roleName)) !== null;
   },
 });
 
@@ -106,12 +113,7 @@ export const userHasPermission = query({
 export const assignRole = internalMutation({
   args: { userId: v.id('users'), roleName: v.string() },
   handler: async (ctx, { userId, roleName }) => {
-    const existing = await ctx.db
-      .query('userRoles')
-      .withIndex('byUserAndRole', (q) =>
-        q.eq('userId', userId).eq('roleName', roleName),
-      )
-      .unique();
+    const existing = await findAssignment(ctx, userId, roleName);
     if (existing) return existing._id;
     return await ctx.db.insert('userRoles', { userId, roleName });
   },
@@ -120,12 +122,7 @@ export const assignRole = internalMutation({
 export const revokeRole = internalMutation({
   args: { userId: v.id('users'), roleName: v.string() },
   handler: async (ctx, { userId, roleName }) => {
-    const existing = await ctx.db
-      .query('userRoles')
-      .withIndex('byUserAndRole', (q) =>
-        q.eq('userId', userId).eq('roleName', roleName),
-      )
-      .unique();
+    const existing = await findAssignment(ctx, userId, roleName);
     if (existing) await ctx.db.delete(existing._id);
   },
 });
@@ -149,12 +146,7 @@ export async function requireRole(
   roleName: string,
 ): Promise<Doc<'users'>> {
   const user = await requireUser(ctx);
-  const assignment = await ctx.db
-    .query('userRoles')
-    .withIndex('byUserAndRole', (q) =>
-      q.eq('userId', user._id).eq('roleName', roleName),
-    )
-    .unique();
+  const assignment = await findAssignment(ctx, user._id, roleName);
   if (!assignment) {
     throw new Error(`Forbidden: requires role "${roleName}"`);
   }
@@ -166,16 +158,8 @@ export async function requirePermission(
   permission: string,
 ): Promise<Doc<'users'>> {
   const user = await requireUser(ctx);
-  const assignments = await ctx.db
-    .query('userRoles')
-    .withIndex('byUserId', (q) => q.eq('userId', user._id))
-    .collect();
-  for (const a of assignments) {
-    const role = await ctx.db
-      .query('roles')
-      .withIndex('byName', (q) => q.eq('name', a.roleName))
-      .unique();
-    if (role && role.permissions.includes(permission)) return user;
-  }
+  const roles = await getRolesForUser(ctx, user._id);
+  const permissions = await getPermissionsForRoles(ctx, roles);
+  if (permissions.includes(permission)) return user;
   throw new Error(`Forbidden: requires permission "${permission}"`);
 }
