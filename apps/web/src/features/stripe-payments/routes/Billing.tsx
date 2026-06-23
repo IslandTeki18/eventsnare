@@ -28,6 +28,12 @@ export function Billing() {
   return (
     <ProtectedRoute>
       <div className="mx-auto max-w-3xl px-6 py-10">
+        <Link
+          to="/"
+          className="mb-4 inline-block text-sm text-muted-foreground underline hover:text-foreground"
+        >
+          ← Back to app
+        </Link>
         <h1 className="mb-6 text-2xl font-semibold tracking-tight">Billing</h1>
         {data === undefined ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
