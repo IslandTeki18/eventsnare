@@ -4,7 +4,6 @@ const items = [
   { label: 'Overview', to: '/' },
   { label: 'Users', to: '/users' },
   { label: 'Blog', to: '/blog' },
-  { label: 'Activity', to: '/activity' },
   { label: 'System', to: '/system' },
 ];
 

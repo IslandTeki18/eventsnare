@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Webhook } from 'svix';
-import { clerkAdapter } from './clerk';
-import { resendAdapter } from './resend';
+import { clerkAdapter, resendAdapter } from './index';
 
 // A valid Svix-format base64 secret (the canonical Svix doc example).
 const SECRET = 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw';

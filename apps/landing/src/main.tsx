@@ -9,7 +9,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { ConvexProvider } from 'convex/react';
-import { convex } from '@/lib/convex';
+import { convex } from '@eventsnare/ui/web/convex';
 import { App } from '@/App';
 import '@/index.css';
 

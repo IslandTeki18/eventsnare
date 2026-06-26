@@ -3,11 +3,14 @@
 // new adapter file and fixture suite.
 
 import type { ProviderAdapter } from './types';
+import { createSvixAdapter } from './svixBase';
 import { stripeAdapter } from './stripe';
 import { githubAdapter } from './github';
 import { shopifyAdapter } from './shopify';
-import { clerkAdapter } from './clerk';
-import { resendAdapter } from './resend';
+
+// Clerk and Resend webhooks are both Svix-signed; same scheme, no per-provider logic.
+export const clerkAdapter = createSvixAdapter('clerk');
+export const resendAdapter = createSvixAdapter('resend');
 
 export const PROVIDERS = {
   stripe: stripeAdapter,

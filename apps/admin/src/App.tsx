@@ -5,7 +5,6 @@ import {
   AdminLayout,
   AdminOverview,
   AdminUsers,
-  AdminActivity,
   AdminSystem,
 } from '@/features/admin-dashboard';
 import { BlogIndex, BlogEditor } from '@/features/blog-dashboard';
@@ -62,16 +61,6 @@ export function App() {
             <AdminGate>
               <AdminLayout>
                 <BlogEditor />
-              </AdminLayout>
-            </AdminGate>
-          }
-        />
-        <Route
-          path="/activity"
-          element={
-            <AdminGate>
-              <AdminLayout>
-                <AdminActivity />
               </AdminLayout>
             </AdminGate>
           }

@@ -7,7 +7,7 @@
   "exports": {
     "./tokens": "./tokens/index.ts",
     "./web": "./web/index.ts",
-    "./mobile": "./mobile/index.ts",
+    "./web/convex": "./web/convex.ts",
     "./tailwind-preset": "./tailwind/preset.ts"
   },
   "scripts": {
