@@ -1,6 +1,7 @@
 // Workspace provisioning and lookup. One workspace per user in v1 (SPEC FR-AUTH-2).
 // The dashboard calls ensureForCurrentUser on mount; everything else reads getCurrent.
 
+import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import type { QueryCtx, MutationCtx } from './_generated/server';
 import type { Doc } from './_generated/dataModel';
@@ -40,6 +41,15 @@ export async function requireWorkspace(
 export const getCurrent = query({
   args: {},
   handler: async (ctx) => getCurrentWorkspace(ctx),
+});
+
+// Overage opt-in (SPEC FR-BILL-4). Records consent; Stripe metered enforcement is deferred.
+export const setAllowOverages = mutation({
+  args: { allowOverages: v.boolean() },
+  handler: async (ctx, { allowOverages }) => {
+    const workspace = await requireWorkspace(ctx);
+    await ctx.db.patch(workspace._id, { allowOverages });
+  },
 });
 
 export const ensureForCurrentUser = mutation({

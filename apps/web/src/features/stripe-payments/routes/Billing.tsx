@@ -1,5 +1,4 @@
-import { useAction, useQuery } from 'convex/react';
-import { useState } from 'react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { Link } from 'react-router';
 import { ProtectedRoute } from '@/features/auth';
 import { SubscriptionStatus } from '@/features/stripe-payments/components/SubscriptionStatus';
@@ -11,10 +10,11 @@ export function Billing() {
   const workspace = useWorkspace();
   const data = useQuery(api.stripe.getMySubscription);
   const createPortalSession = useAction(api.stripeActions.createPortalSession);
+  const setAllowOverages = useMutation(api.workspaces.setAllowOverages);
 
-  // ponytail: display-only. Overage metering (FR-BILL-4) is not wired to the
-  // backend yet; persist this via a workspace flag + Stripe meter when built.
-  const [overageOptIn, setOverageOptIn] = useState(false);
+  // ponytail: opt-in is persisted on the workspace (FR-BILL-4). Only Stripe metered
+  // enforcement is deferred; hard-cap default holds until a customer needs overages.
+  const overageOptIn = workspace.allowOverages ?? false;
 
   const tier = PLAN_CATALOG.find((p) => p.tier === workspace.plan);
   const overageEligible = tier?.overageEligible ?? false;
@@ -72,7 +72,7 @@ export function Billing() {
             <input
               type="checkbox"
               checked={overageOptIn}
-              onChange={(e) => setOverageOptIn(e.target.checked)}
+              onChange={(e) => void setAllowOverages({ allowOverages: e.target.checked })}
               className="mt-0.5"
             />
             <span>

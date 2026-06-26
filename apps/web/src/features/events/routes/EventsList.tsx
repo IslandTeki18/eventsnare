@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { usePaginatedQuery } from 'convex/react';
+import { usePaginatedQuery, useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -115,6 +115,29 @@ function EventTable({
   pageStatus: ReturnType<typeof usePaginatedQuery>['status'];
   loadMore: (n: number) => void;
 }) {
+  // Selection is per-loaded-page (FR-DASH-4): replay the visible set the user picks.
+  const [selected, setSelected] = useState<Set<Id<'events'>>>(new Set());
+  const replayBulk = useMutation(api.events.replayBulk);
+  const [replaying, setReplaying] = useState(false);
+
+  const toggle = (id: Id<'events'>) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const handleReplay = async () => {
+    setReplaying(true);
+    try {
+      await replayBulk({ eventIds: [...selected] });
+      setSelected(new Set());
+    } finally {
+      setReplaying(false);
+    }
+  };
+
   if (results.length === 0 && pageStatus !== 'LoadingFirstPage') {
     return (
       <div className="rounded-lg border border-border bg-background p-8 text-center">
@@ -125,10 +148,32 @@ function EventTable({
 
   return (
     <>
+      {selected.size > 0 ? (
+        <div className="mb-3 flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm">
+          <span className="text-muted-foreground">{selected.size} selected</span>
+          <button
+            type="button"
+            onClick={() => void handleReplay()}
+            disabled={replaying}
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            {replaying ? 'Replaying…' : 'Replay selected'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="text-muted-foreground underline hover:text-foreground"
+          >
+            Clear
+          </button>
+        </div>
+      ) : null}
+
       <div className="overflow-hidden rounded-lg border border-border">
         <table className="w-full text-left text-sm">
           <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
+              <th className="w-10 px-4 py-2.5" />
               <th className="px-4 py-2.5 font-medium">Received</th>
               <th className="px-4 py-2.5 font-medium">Type</th>
               <th className="px-4 py-2.5 font-medium">Signature</th>
@@ -138,6 +183,14 @@ function EventTable({
           <tbody>
             {results.map((event) => (
               <tr key={event._id} className="border-t border-border hover:bg-muted/30">
+                <td className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(event._id)}
+                    onChange={() => toggle(event._id)}
+                    aria-label="Select event"
+                  />
+                </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   <Link to={`/events/${event._id}`} className="hover:text-primary">
                     {new Date(event.receivedAt).toLocaleString()}

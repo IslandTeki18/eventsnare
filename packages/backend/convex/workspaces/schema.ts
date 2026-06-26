@@ -12,6 +12,9 @@ export const workspacesTables = {
     slug: v.string(),
     name: v.string(),
     plan: v.string(),
+    // Overage opt-in (SPEC FR-BILL-4). Off/undefined = hard-capped at plan limit.
+    // Stripe metered enforcement is deferred; this flag records consent only.
+    allowOverages: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index('by_owner', ['ownerUserId'])
