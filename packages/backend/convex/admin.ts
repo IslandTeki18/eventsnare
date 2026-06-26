@@ -74,6 +74,30 @@ export const getAnalytics = query({
   },
 });
 
+export const getSystemStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+    const me = await ctx.db
+      .query('users')
+      .withIndex('byClerkId', (q) => q.eq('clerkId', identity.subject))
+      .unique();
+    if (!me) return null;
+    const myRoles = await ctx.db
+      .query('userRoles')
+      .withIndex('byUserId', (q) => q.eq('userId', me._id))
+      .collect();
+    if (!myRoles.some((r) => r.roleName === 'admin')) return null;
+
+    return {
+      uptime: 'Online',
+      convexDeploymentUrl: process.env.CONVEX_CLOUD_URL ?? '',
+      checkedAt: Date.now(),
+    };
+  },
+});
+
 export const setUserRole = mutation({
   args: { userId: v.id('users'), roleName: v.string() },
   handler: async (ctx, { userId, roleName }) => {

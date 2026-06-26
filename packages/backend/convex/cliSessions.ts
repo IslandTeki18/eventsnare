@@ -82,7 +82,10 @@ export const sourcesForWorkspace = internalQuery({
 
 export const listSources = action({
   args: { token: v.string() },
-  handler: async (ctx, { token }) => {
+  handler: async (
+    ctx,
+    { token },
+  ): Promise<Pick<Doc<'sources'>, '_id' | 'name' | 'provider' | 'status'>[]> => {
     const context = await requireContext(ctx, token);
     return await ctx.runQuery(internal.cliSessions.sourcesForWorkspace, {
       workspaceId: context.workspaceId,
