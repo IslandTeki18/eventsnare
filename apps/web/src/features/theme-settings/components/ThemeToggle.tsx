@@ -1,5 +1,10 @@
-import { useTheme } from '@/features/theme-settings/hooks/useTheme';
-import type { Theme } from '@/features/theme-settings/lib/theme';
+import { useState } from 'react';
+import {
+  type Theme,
+  applyTheme,
+  getStoredTheme,
+  setStoredTheme,
+} from '@/features/theme-settings/lib/theme';
 
 const NEXT_THEME: Record<Theme, Theme> = {
   light: 'dark',
@@ -14,14 +19,21 @@ const LABEL: Record<Theme, string> = {
 };
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
+
+  const cycle = () => {
+    const next = NEXT_THEME[theme];
+    setStoredTheme(next);
+    applyTheme(next);
+    setThemeState(next);
+  };
 
   return (
     <button
       type="button"
       aria-label={LABEL[theme]}
       title={LABEL[theme]}
-      onClick={() => setTheme(NEXT_THEME[theme])}
+      onClick={cycle}
       className="fixed top-4 right-4 z-50 flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background p-0 text-foreground shadow-sm transition-colors hover:bg-muted"
     >
       {theme === 'light' && <SunIcon />}

@@ -2,9 +2,9 @@ import { Route, Routes } from 'react-router';
 import { SignIn, SignUp } from '@/features/auth';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import '@/features/notifications/lib/bootstrap';
-import { PushPlayground } from '@/features/notifications';
 import { Pricing, Billing } from '@/features/stripe-payments';
 import '@/features/theme-settings/lib/bootstrap';
+import { ThemeToggle } from '@/features/theme-settings';
 import { Settings } from '@/features/settings';
 import { Profile } from '@/features/user-profile';
 import { Home } from '@/features/dashboard';
@@ -19,6 +19,7 @@ import { CliTokens } from '@/features/cli-tokens';
 export function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <ThemeToggle />
       <Routes>
         {/* Auth */}
         <Route path="/sign-in/*" element={<SignIn />} />
@@ -51,8 +52,7 @@ export function App() {
         <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
         <Route path="/profile" element={<DashboardLayout><Profile /></DashboardLayout>} />
 
-        {/* Standalone demo/marketing routes */}
-        <Route path="/push" element={<PushPlayground />} />
+        {/* Standalone marketing routes */}
         <Route path="/pricing" element={<Pricing />} />
         {/* @scaffold:routes */}
       </Routes>

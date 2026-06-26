@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router';
 import { ClerkProvider, useAuth } from '@clerk/clerk-react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { getClerkPublishableKey } from '@eventsnare/ui/web';
-import { convex } from '@/lib/convex';
+import { convex } from '@eventsnare/ui/web/convex';
 import { App } from '@/App';
 import '@/index.css';
 

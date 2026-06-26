@@ -1,7 +1,10 @@
 import { defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
-export const adminTables = {
+// Write-only security audit trail. Populated by sensitive operations
+// (CLI token issue/revoke, outbound secret reveal). No in-app reader today;
+// add an index when one lands.
+export const auditTables = {
   activityLogs: defineTable({
     actorUserId: v.id('users'),
     action: v.string(),
@@ -9,14 +12,7 @@ export const adminTables = {
     targetId: v.optional(v.string()),
     metadata: v.optional(v.any()),
     createdAt: v.number(),
-  })
-    .index('byCreatedAt', ['createdAt'])
-    .index('byActor', ['actorUserId']),
-  userBans: defineTable({
-    userId: v.id('users'),
-    bannedAt: v.number(),
-    bannedBy: v.id('users'),
-  }).index('byUserId', ['userId']),
+  }),
 };
 
-export default adminTables;
+export default auditTables;

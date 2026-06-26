@@ -1,8 +1,6 @@
 // Ingress domain tables: the production-shaped webhook relay model (sources, events,
-// deliveryAttempts, usageCounters) plus stressTestRuns for recording each run's parameters
-// and measured latencies. These are the real domain tables from SPEC §8 translated to
-// Convex; the stress harness writes to them so the load test reflects the actual ingress
-// hot path rather than throwaway scaffolding.
+// deliveryAttempts, usageCounters). These are the real domain tables from SPEC §8
+// translated to Convex.
 //
 // workspaceId references the `workspaces` table (SPEC §8). Event status follows the task
 // spec (received | delivering | delivered | failed | deadLetter); SPEC §8 additionally
@@ -111,21 +109,6 @@ export const ingressTables = {
   })
     .index('by_source_hour', ['sourceId', 'hourBucket'])
     .index('by_workspace_hour', ['workspaceId', 'hourBucket']),
-
-  stressTestRuns: defineTable({
-    label: v.string(),
-    startedAt: v.number(),
-    completedAt: v.optional(v.number()),
-    targetEventsPerSecond: v.number(),
-    targetDurationSeconds: v.number(),
-    totalAttempted: v.number(),
-    totalSucceeded: v.number(),
-    totalFailed: v.number(),
-    p50LatencyMs: v.optional(v.number()),
-    p95LatencyMs: v.optional(v.number()),
-    p99LatencyMs: v.optional(v.number()),
-    notes: v.optional(v.string()),
-  }),
 };
 
 export default ingressTables;

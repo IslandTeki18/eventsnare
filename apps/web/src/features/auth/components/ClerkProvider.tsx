@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
-import { convex } from '@/lib/convex';
+import { convex } from '@eventsnare/ui/web/convex';
 
 interface AppClerkProviderProps {
   children: ReactNode;

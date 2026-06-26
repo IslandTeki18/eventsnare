@@ -9,7 +9,6 @@
  */
 
 import type * as admin from "../admin.js";
-import type * as adminActions from "../adminActions.js";
 import type * as alerts from "../alerts.js";
 import type * as alerts_dispatch from "../alerts/dispatch.js";
 import type * as analytics from "../analytics.js";
@@ -37,11 +36,9 @@ import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_searchText from "../lib/searchText.js";
 import type * as notifications from "../notifications.js";
 import type * as profiles from "../profiles.js";
-import type * as providers_clerk from "../providers/clerk.js";
 import type * as providers_github from "../providers/github.js";
 import type * as providers_hmac from "../providers/hmac.js";
 import type * as providers_index from "../providers/index.js";
-import type * as providers_resend from "../providers/resend.js";
 import type * as providers_shopify from "../providers/shopify.js";
 import type * as providers_stripe from "../providers/stripe.js";
 import type * as providers_svixBase from "../providers/svixBase.js";
@@ -52,7 +49,6 @@ import type * as rbac from "../rbac.js";
 import type * as secretsMigration from "../secretsMigration.js";
 import type * as settings from "../settings.js";
 import type * as sources from "../sources.js";
-import type * as stressTest from "../stressTest.js";
 import type * as stripe from "../stripe.js";
 import type * as stripe_webhooks from "../stripe/webhooks.js";
 import type * as stripeActions from "../stripeActions.js";
@@ -68,7 +64,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
-  adminActions: typeof adminActions;
   alerts: typeof alerts;
   "alerts/dispatch": typeof alerts_dispatch;
   analytics: typeof analytics;
@@ -96,11 +91,9 @@ declare const fullApi: ApiFromModules<{
   "lib/searchText": typeof lib_searchText;
   notifications: typeof notifications;
   profiles: typeof profiles;
-  "providers/clerk": typeof providers_clerk;
   "providers/github": typeof providers_github;
   "providers/hmac": typeof providers_hmac;
   "providers/index": typeof providers_index;
-  "providers/resend": typeof providers_resend;
   "providers/shopify": typeof providers_shopify;
   "providers/stripe": typeof providers_stripe;
   "providers/svixBase": typeof providers_svixBase;
@@ -111,7 +104,6 @@ declare const fullApi: ApiFromModules<{
   secretsMigration: typeof secretsMigration;
   settings: typeof settings;
   sources: typeof sources;
-  stressTest: typeof stressTest;
   stripe: typeof stripe;
   "stripe/webhooks": typeof stripe_webhooks;
   stripeActions: typeof stripeActions;
