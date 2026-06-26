@@ -6,6 +6,15 @@ import { mutation, query } from './_generated/server';
 import type { QueryCtx, MutationCtx } from './_generated/server';
 import type { Doc } from './_generated/dataModel';
 import { getCurrentUser, requireUser } from './lib/auth';
+import { isDisposableEmail } from './lib/disposableEmail';
+
+// Result of provisioning the current user's free workspace. Anything other than `ok` is a
+// gate the dashboard must render (the workspace was not created).
+type EnsureResult =
+  | { status: 'ok'; workspace: Doc<'workspaces'> }
+  | { status: 'needs_phone' }
+  | { status: 'free_tier_used'; lifetimeEvents: number }
+  | { status: 'disposable_email' };
 
 function slugify(input: string): string {
   return (
@@ -54,14 +63,32 @@ export const setAllowOverages = mutation({
 
 export const ensureForCurrentUser = mutation({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<EnsureResult> => {
     const user = await requireUser(ctx);
 
     const existing = await ctx.db
       .query('workspaces')
       .withIndex('by_owner', (q) => q.eq('ownerUserId', user._id))
       .first();
-    if (existing) return existing;
+    if (existing) return { status: 'ok', workspace: existing };
+
+    // Soft signal: block obvious throwaway-email providers. Phone is the real gate below.
+    if (isDisposableEmail(user.email)) return { status: 'disposable_email' };
+
+    // Verified-phone gate. phoneHash is set by the Clerk webhook once the verified phone lands;
+    // refuse to provision before it arrives so the free tier is never granted unverified. Phone
+    // is required at signup, so this resolves as soon as the webhook is processed.
+    if (!user.phoneHash) return { status: 'needs_phone' };
+
+    const ledger = await ctx.db
+      .query('phoneLedger')
+      .withIndex('byPhoneHash', (q) => q.eq('phoneHash', user.phoneHash!))
+      .unique();
+
+    // One verified phone gets one free tier, across re-signups and account deletions.
+    if (ledger && ledger.freeWorkspacesCreated >= 1) {
+      return { status: 'free_tier_used', lifetimeEvents: ledger.lifetimeEvents };
+    }
 
     // Deterministic, collision-free slug: human-readable base plus a suffix derived from
     // the user's unique id (mutations cannot use Math.random).
@@ -76,6 +103,21 @@ export const ensureForCurrentUser = mutation({
       plan: 'free',
       createdAt: Date.now(),
     });
-    return await ctx.db.get(workspaceId);
+
+    if (ledger) {
+      await ctx.db.patch(ledger._id, {
+        freeWorkspacesCreated: ledger.freeWorkspacesCreated + 1,
+      });
+    } else {
+      await ctx.db.insert('phoneLedger', {
+        phoneHash: user.phoneHash,
+        firstSeenAt: Date.now(),
+        freeWorkspacesCreated: 1,
+        lifetimeEvents: 0,
+      });
+    }
+
+    const workspace = await ctx.db.get(workspaceId);
+    return { status: 'ok', workspace: workspace! };
   },
 });
