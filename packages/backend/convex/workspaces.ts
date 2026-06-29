@@ -75,15 +75,15 @@ export const ensureForCurrentUser = mutation({
     // Soft signal: block obvious throwaway-email providers. Phone is the real gate below.
     if (isDisposableEmail(user.email)) return { status: 'disposable_email' };
 
-    // Verified-phone gate. phoneHash is set by the Clerk webhook once the verified phone lands;
-    // refuse to provision before it arrives so the free tier is never granted unverified. Phone
-    // is required at signup, so this resolves as soon as the webhook is processed.
-    if (!user.phoneHash) return { status: 'needs_phone' };
-
-    const ledger = await ctx.db
-      .query('phoneLedger')
-      .withIndex('byPhoneHash', (q) => q.eq('phoneHash', user.phoneHash!))
-      .unique();
+    // ponytail: verified-phone gate disabled temporarily (Clerk SMS verification is paid and
+    // not enabled yet). To re-enable: restore `if (!user.phoneHash) return { status: 'needs_phone' }`
+    // and make the ledger read/writes below unconditional again.
+    const ledger = user.phoneHash
+      ? await ctx.db
+          .query('phoneLedger')
+          .withIndex('byPhoneHash', (q) => q.eq('phoneHash', user.phoneHash!))
+          .unique()
+      : null;
 
     // One verified phone gets one free tier, across re-signups and account deletions.
     if (ledger && ledger.freeWorkspacesCreated >= 1) {
@@ -104,17 +104,19 @@ export const ensureForCurrentUser = mutation({
       createdAt: Date.now(),
     });
 
-    if (ledger) {
-      await ctx.db.patch(ledger._id, {
-        freeWorkspacesCreated: ledger.freeWorkspacesCreated + 1,
-      });
-    } else {
-      await ctx.db.insert('phoneLedger', {
-        phoneHash: user.phoneHash,
-        firstSeenAt: Date.now(),
-        freeWorkspacesCreated: 1,
-        lifetimeEvents: 0,
-      });
+    if (user.phoneHash) {
+      if (ledger) {
+        await ctx.db.patch(ledger._id, {
+          freeWorkspacesCreated: ledger.freeWorkspacesCreated + 1,
+        });
+      } else {
+        await ctx.db.insert('phoneLedger', {
+          phoneHash: user.phoneHash,
+          firstSeenAt: Date.now(),
+          freeWorkspacesCreated: 1,
+          lifetimeEvents: 0,
+        });
+      }
     }
 
     const workspace = await ctx.db.get(workspaceId);
