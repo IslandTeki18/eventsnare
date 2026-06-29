@@ -74,3 +74,24 @@ export const createNotification = internalMutation({
     });
   },
 });
+
+// Fan an alert out to the workspace owner's in-app inbox. One owner per workspace in v1.
+export const notifyWorkspaceOwner = internalMutation({
+  args: {
+    workspaceId: v.id('workspaces'),
+    type: v.string(),
+    title: v.string(),
+    body: v.optional(v.string()),
+  },
+  handler: async (ctx, { workspaceId, type, title, body }) => {
+    const ws = await ctx.db.get(workspaceId);
+    if (!ws) return;
+    await ctx.db.insert('notifications', {
+      userId: ws.ownerUserId,
+      type,
+      title,
+      body,
+      createdAt: Date.now(),
+    });
+  },
+});

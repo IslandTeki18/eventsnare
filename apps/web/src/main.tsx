@@ -6,6 +6,7 @@ import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { getClerkPublishableKey } from '@eventsnare/ui/web';
 import { convex } from '@eventsnare/ui/web/convex';
 import { App } from '@/App';
+import { ToastProvider } from '@/components/ui/Toast';
 import '@/index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -13,9 +14,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ClerkProvider publishableKey={getClerkPublishableKey()}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         {/* @scaffold:providers */}
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </ToastProvider>
       </ConvexProviderWithClerk>
     </ClerkProvider>
   </React.StrictMode>,

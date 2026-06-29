@@ -86,6 +86,24 @@ export const dispatchAlert = internalAction({
     message: v.string(),
   },
   handler: async (ctx, { workspaceId, type, subject, message }): Promise<void> => {
+    // Always-on in-app channel: record the alert in the owner's inbox regardless of
+    // email/Slack config. Wrapped so a notification failure never breaks dispatch.
+    try {
+      await ctx.runMutation(internal.notifications.notifyWorkspaceOwner, {
+        workspaceId,
+        type,
+        title: subject,
+        body: message,
+      });
+    } catch (err) {
+      console.error(
+        JSON.stringify({
+          msg: 'inapp_notify_failed',
+          error: err instanceof Error ? err.message : 'unknown',
+        }),
+      );
+    }
+
     const targets = await ctx.runQuery(internal.alerts.dispatch.getEnabledAlerts, {
       workspaceId,
       type,

@@ -14,12 +14,14 @@ import { EventsList, EventDetail } from '@/features/events';
 import { Analytics } from '@/features/analytics';
 import { Usage } from '@/features/usage';
 import { CliTokens } from '@/features/cli-tokens';
+import { NotificationToaster } from '@/features/notifications/components/NotificationToaster';
 // @scaffold:imports
 
 export function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ThemeToggle />
+      <NotificationToaster />
       <Routes>
         {/* Auth */}
         <Route path="/sign-in/*" element={<SignIn />} />
