@@ -1,7 +1,6 @@
 import { Route, Routes } from 'react-router';
 import { SignIn, SignUp } from '@/features/auth';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
-import '@/features/notifications/lib/bootstrap';
 import { Pricing, Billing } from '@/features/stripe-payments';
 import '@/features/theme-settings/lib/bootstrap';
 import { ThemeToggle } from '@/features/theme-settings';
@@ -15,12 +14,14 @@ import { Analytics } from '@/features/analytics';
 import { Usage } from '@/features/usage';
 import { CliTokens } from '@/features/cli-tokens';
 import { NotificationToaster } from '@/features/notifications/components/NotificationToaster';
+import { NotificationBell } from '@/features/notifications';
 // @scaffold:imports
 
 export function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <ThemeToggle />
+      <NotificationBell />
       <NotificationToaster />
       <Routes>
         {/* Auth */}
