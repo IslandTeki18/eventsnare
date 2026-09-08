@@ -1,22 +1,29 @@
 import { cn } from '@/lib/utils';
 
-// Shared status pill for both event statuses (received | delivering | delivered | failed |
-// deadLetter) and source statuses (active | paused | deleted). Unknown statuses fall back to
-// a neutral style.
+// Status marker for events (received | delivering | delivered | failed | deadLetter) and
+// sources (active | paused | deleted): a square dot plus the plain-language label, tinted by
+// severity. Unknown statuses fall back to neutral ink.
 
-const STYLES: Record<string, string> = {
-  delivered: 'bg-emerald-500/15 text-emerald-400',
-  active: 'bg-emerald-500/15 text-emerald-400',
-  received: 'bg-sky-500/15 text-sky-400',
-  delivering: 'bg-sky-500/15 text-sky-400',
-  failed: 'bg-amber-500/15 text-amber-400',
-  paused: 'bg-amber-500/15 text-amber-400',
-  deadLetter: 'bg-rose-500/15 text-rose-400',
-  deleted: 'bg-muted text-muted-foreground',
+const COLORS: Record<string, string> = {
+  delivered: 'text-ok',
+  active: 'text-ok',
+  received: 'text-info',
+  delivering: 'text-info',
+  failed: 'text-warn',
+  paused: 'text-warn',
+  deadLetter: 'text-bad',
+  deleted: 'text-subtle',
 };
 
 const LABELS: Record<string, string> = {
-  deadLetter: 'dead-letter',
+  delivered: 'Delivered',
+  active: 'Active',
+  received: 'Received',
+  delivering: 'Sending',
+  failed: 'Retrying',
+  paused: 'Paused',
+  deadLetter: 'Gave up',
+  deleted: 'Deleted',
 };
 
 interface StatusBadgeProps {
@@ -28,11 +35,12 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-        STYLES[status] ?? 'bg-muted text-muted-foreground',
+        'inline-flex items-center gap-[7px] whitespace-nowrap text-sm',
+        COLORS[status] ?? 'text-subtle',
         className,
       )}
     >
+      <span className="h-1.5 w-1.5 flex-shrink-0 bg-current" />
       {LABELS[status] ?? status}
     </span>
   );

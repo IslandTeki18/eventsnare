@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAction } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { Button } from '@/components/ui/Button';
 
 // Send a synthetic event through the real delivery path (SPEC §10 step 6) to verify the
 // customer's forward URL is reachable. The resulting event appears in the event list.
@@ -29,13 +30,8 @@ export function TestEventButton({ sourceId, onSent }: TestEventButtonProps) {
   };
 
   return (
-    <button
-      type="button"
-      onClick={() => void handleClick()}
-      disabled={sending}
-      className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
-    >
-      {sending ? 'Sending…' : sent ? 'Test sent' : 'Send test event'}
-    </button>
+    <Button variant="primary" onClick={() => void handleClick()} disabled={sending}>
+      {sending ? 'Sending…' : sent ? 'Test sent' : 'Send a test event'}
+    </Button>
   );
 }

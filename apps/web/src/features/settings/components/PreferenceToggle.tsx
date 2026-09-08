@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@convex/_generated/api';
+import { ToggleRow } from '@/components/ui/ToggleRow';
 
 interface PreferenceToggleProps {
   settingKey: string;
@@ -20,25 +21,13 @@ export function PreferenceToggle({
   const isLoading = stored === undefined;
   const value = stored === null || stored === undefined ? defaultValue : stored === 'true';
 
-  const handleChange = async (next: boolean) => {
-    await setSetting({ key: settingKey, value: next ? 'true' : 'false' });
-  };
-
   return (
-    <label className="flex items-start justify-between gap-4">
-      <span className="flex flex-col">
-        <span className="text-sm font-medium">{label}</span>
-        {description ? (
-          <span className="text-xs text-muted-foreground">{description}</span>
-        ) : null}
-      </span>
-      <input
-        type="checkbox"
-        checked={value}
-        disabled={isLoading}
-        onChange={(event) => handleChange(event.target.checked)}
-        className="mt-1 h-4 w-4 cursor-pointer rounded border-border accent-foreground"
-      />
-    </label>
+    <ToggleRow
+      label={label}
+      description={description}
+      checked={value}
+      disabled={isLoading}
+      onChange={(next) => void setSetting({ key: settingKey, value: next ? 'true' : 'false' })}
+    />
   );
 }

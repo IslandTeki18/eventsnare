@@ -15,7 +15,7 @@ export function NotificationPanel({ onClose }: NotificationPanelProps) {
   const hasUnread = recent?.some((n: { readAt?: number }) => n.readAt === undefined) ?? false;
 
   return (
-    <div className="fixed right-4 top-16 z-40 flex max-h-[70vh] w-80 flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg">
+    <div className="fixed bottom-4 left-[236px] z-40 flex max-h-[70vh] w-80 flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg">
       <header className="flex items-center justify-between border-b border-border px-4 py-2">
         <span className="text-sm font-semibold">Notifications</span>
         <div className="flex items-center gap-2">

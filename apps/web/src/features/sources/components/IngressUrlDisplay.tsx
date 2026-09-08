@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
 
 // Read-only ingress URL with a copy button. The URL is what the customer pastes into the
 // provider dashboard. If HOOKS_BASE_URL is unset on the backend, ingressUrl is empty and we
@@ -20,17 +21,11 @@ export function IngressUrlDisplay({ url, path }: IngressUrlDisplayProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <code className="flex-1 overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 font-mono text-xs">
+    <div className="flex flex-wrap items-stretch gap-2">
+      <code className="min-w-0 flex-1 basis-[280px] overflow-x-auto whitespace-nowrap rounded-md border border-border bg-panel px-[11px] py-2 font-mono text-xs">
         {value}
       </code>
-      <button
-        type="button"
-        onClick={() => void handleCopy()}
-        className="shrink-0 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-muted"
-      >
-        {copied ? 'Copied' : 'Copy'}
-      </button>
+      <Button onClick={() => void handleCopy()}>{copied ? 'Copied' : 'Copy'}</Button>
     </div>
   );
 }

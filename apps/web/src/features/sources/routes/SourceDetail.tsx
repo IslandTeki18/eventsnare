@@ -3,8 +3,14 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { SettingRow } from '@/components/ui/SettingRow';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { cn } from '@/lib/utils';
 import { getProviderMeta } from '@/features/sources/lib/providers';
+import { IngressUrlDisplay } from '@/features/sources/components/IngressUrlDisplay';
 import { ProviderSetupGuide } from '@/features/sources/components/ProviderSetupGuide';
 import { OutboundSecuritySettings } from '@/features/sources/components/OutboundSecuritySettings';
 import { TestEventButton } from '@/features/sources/components/TestEventButton';
@@ -24,151 +30,157 @@ export function SourceDetail() {
 
   const [forwardUrl, setForwardUrl] = useState<string | null>(null);
   const [newSecret, setNewSecret] = useState('');
-  const [tab, setTab] = useState<'settings' | 'analytics'>('settings');
+  const [tab, setTab] = useState<'settings' | 'activity'>('settings');
 
   if (source === undefined) {
-    return <p className="px-6 py-10 text-sm text-muted-foreground">Loading…</p>;
+    return <p className="px-[22px] py-4 text-sm text-subtle">Loading…</p>;
   }
   if (source === null) {
-    return <p className="px-6 py-10 text-sm text-muted-foreground">Source not found.</p>;
+    return <p className="px-[22px] py-4 text-sm text-subtle">Source not found.</p>;
   }
 
-  return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link to="/sources" className="text-xs text-muted-foreground hover:text-foreground">
-        ← Sources
-      </Link>
+  const providerName = getProviderMeta(source.provider)?.name ?? source.provider;
 
-      <div className="mb-6 mt-2 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{source.name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {getProviderMeta(source.provider)?.name ?? source.provider}
+  return (
+    <>
+      <PageHeader
+        title={
+          <>
+            <Link to="/sources" className="text-subtle">
+              Sources
+            </Link>
+            <span className="text-subtle"> / </span>
+            <span className="font-medium">{source.name}</span>
+          </>
+        }
+      >
+        {source.status === 'paused' ? (
+          <Button onClick={() => void resume({ sourceId: id })}>Resume</Button>
+        ) : (
+          <Button onClick={() => void pause({ sourceId: id })}>Pause</Button>
+        )}
+        <TestEventButton sourceId={id} />
+      </PageHeader>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-[22px] pt-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="m-0 text-xl font-semibold tracking-[-0.01em]">{source.name}</h1>
+            <StatusBadge status={source.status} />
+          </div>
+          <p className="mt-[7px] text-sm text-muted-foreground">
+            {providerName} · forwarding to your endpoint
           </p>
         </div>
-        <StatusBadge status={source.status} />
-      </div>
 
-      <div className="mb-8 flex flex-wrap gap-2">
-        <TestEventButton sourceId={id} />
-        <Link
-          to={`/events?sourceId=${id}`}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
-        >
-          View events
-        </Link>
-        {source.status === 'paused' ? (
-          <button
-            type="button"
-            onClick={() => void resume({ sourceId: id })}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
-          >
-            Resume
-          </button>
+        <div className="mt-[18px] flex gap-1 border-b border-border px-[22px]">
+          <Tab active={tab === 'settings'} onClick={() => setTab('settings')} label="Settings" />
+          <Tab active={tab === 'activity'} onClick={() => setTab('activity')} label="Activity" />
+        </div>
+
+        {tab === 'activity' ? (
+          <div className="px-[22px] py-5">
+            <SourceAnalytics sourceId={id} />
+          </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => void pause({ sourceId: id })}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
-          >
-            Pause
-          </button>
+          <>
+            <div className="border-b border-border px-[22px] py-5">
+              <div className="mb-1 text-sm font-medium">Your Eventsnare address</div>
+              <p className="mb-2.5 max-w-[620px] text-sm text-muted-foreground">
+                Paste this into {providerName} as the webhook endpoint. {providerName} sends
+                events here, and Eventsnare passes them on to you.
+              </p>
+              <IngressUrlDisplay url={source.ingressUrl} path={source.ingressPath} />
+            </div>
+
+            <div className="border-b border-border px-[22px] py-5">
+              <ProviderSetupGuide
+                provider={source.provider}
+                ingressUrl={source.ingressUrl}
+                ingressPath={source.ingressPath}
+              />
+            </div>
+
+            <SettingRow
+              label="Where to send events"
+              description="Your own endpoint. Verified events are delivered here."
+            >
+              <div className="flex gap-2">
+                <Input
+                  mono
+                  value={forwardUrl ?? source.forwardUrl}
+                  onChange={(e) => setForwardUrl(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  disabled={forwardUrl === null || forwardUrl === source.forwardUrl}
+                  onClick={async () => {
+                    await update({ sourceId: id, forwardUrl: forwardUrl ?? undefined });
+                    setForwardUrl(null);
+                  }}
+                >
+                  Save
+                </Button>
+              </div>
+            </SettingRow>
+
+            <SettingRow
+              label="Signing secret"
+              description={`${providerName} gives you this. It proves each event really came from them. Paste a new one to replace it.`}
+            >
+              <div className="flex gap-2">
+                <Input
+                  mono
+                  type="password"
+                  value={newSecret}
+                  onChange={(e) => setNewSecret(e.target.value)}
+                  placeholder="Signing secret"
+                  className="flex-1"
+                />
+                <Button
+                  disabled={!newSecret}
+                  onClick={async () => {
+                    await rotateSecret({ sourceId: id, signingSecret: newSecret });
+                    setNewSecret('');
+                  }}
+                >
+                  Replace
+                </Button>
+              </div>
+            </SettingRow>
+
+            <OutboundSecuritySettings
+              key={source.forwardHeaderKeys.join(',')}
+              sourceId={id}
+              forwardHeaderKeys={source.forwardHeaderKeys}
+              hasOutboundSecret={source.hasOutboundSecret}
+            />
+
+            <SettingRow
+              label="Delete this source"
+              description="Stops accepting new events from this provider. Existing events are kept until their retention window ends."
+              last
+            >
+              <div>
+                <Button
+                  variant="danger"
+                  onClick={async () => {
+                    await softDelete({ sourceId: id });
+                    navigate('/sources');
+                  }}
+                >
+                  Delete source
+                </Button>
+              </div>
+            </SettingRow>
+          </>
         )}
-        <button
-          type="button"
-          onClick={async () => {
-            await softDelete({ sourceId: id });
-            navigate('/sources');
-          }}
-          className="rounded-md border border-rose-500/40 bg-background px-3 py-1.5 text-sm font-medium text-rose-400 transition-colors hover:bg-rose-500/10"
-        >
-          Delete
-        </button>
       </div>
-
-      <div className="mb-6 flex gap-1 border-b border-border">
-        <TabButton active={tab === 'settings'} onClick={() => setTab('settings')} label="Settings" />
-        <TabButton
-          active={tab === 'analytics'}
-          onClick={() => setTab('analytics')}
-          label="Analytics"
-        />
-      </div>
-
-      {tab === 'analytics' ? (
-        <SourceAnalytics sourceId={id} />
-      ) : (
-        <>
-      <section className="mb-6">
-        <h2 className="mb-2 text-sm font-medium">Connection guide</h2>
-        <ProviderSetupGuide
-          provider={source.provider}
-          ingressUrl={source.ingressUrl}
-          ingressPath={source.ingressPath}
-        />
-      </section>
-
-      <section className="mb-6 flex flex-col gap-2">
-        <h2 className="text-sm font-medium">Forward URL</h2>
-        <div className="flex items-center gap-2">
-          <input
-            value={forwardUrl ?? source.forwardUrl}
-            onChange={(e) => setForwardUrl(e.target.value)}
-            className="flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-xs outline-none focus:border-primary"
-          />
-          <button
-            type="button"
-            disabled={forwardUrl === null || forwardUrl === source.forwardUrl}
-            onClick={async () => {
-              await update({ sourceId: id, forwardUrl: forwardUrl ?? undefined });
-              setForwardUrl(null);
-            }}
-            className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
-          >
-            Save
-          </button>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">Rotate signing secret</h2>
-        <div className="flex items-center gap-2">
-          <input
-            value={newSecret}
-            onChange={(e) => setNewSecret(e.target.value)}
-            type="password"
-            placeholder="New signing secret"
-            className="flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-xs outline-none focus:border-primary"
-          />
-          <button
-            type="button"
-            disabled={!newSecret}
-            onClick={async () => {
-              await rotateSecret({ sourceId: id, signingSecret: newSecret });
-              setNewSecret('');
-            }}
-            className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
-          >
-            Rotate
-          </button>
-        </div>
-      </section>
-
-      <div className="mt-8 border-t border-border pt-8">
-        <OutboundSecuritySettings
-          key={source.forwardHeaderKeys.join(',')}
-          sourceId={id}
-          forwardHeaderKeys={source.forwardHeaderKeys}
-          hasOutboundSecret={source.hasOutboundSecret}
-        />
-      </div>
-        </>
-      )}
-    </div>
+    </>
   );
 }
 
-function TabButton({
+function Tab({
   active,
   onClick,
   label,
@@ -181,11 +193,12 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={
+      className={cn(
+        '-mb-px border-b-2 px-2.5 py-2.5 text-sm transition-colors',
         active
-          ? '-mb-px border-b-2 border-primary px-3 py-2 text-sm font-medium text-foreground'
-          : '-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground'
-      }
+          ? 'border-foreground font-medium text-foreground'
+          : 'border-transparent text-subtle hover:text-foreground',
+      )}
     >
       {label}
     </button>

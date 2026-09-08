@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@convex/_generated/api';
+import { Input } from '@/components/ui/Input';
+import { ToggleRow } from '@/components/ui/ToggleRow';
 
 // Alert configuration (SPEC FR-DASH-6, FR-ALERT-5). Per channel (email, Slack) the customer
 // sets one target and toggles which alert types are delivered to it. Each (type, channel) pair
@@ -43,7 +45,7 @@ export function AlertSettings() {
   const setConfig = useMutation(api.alerts.setConfig);
 
   if (config === undefined) {
-    return <p className="text-sm text-muted-foreground">Loading alert settings…</p>;
+    return <p className="text-sm text-subtle">Loading alert settings…</p>;
   }
 
   const byKey = new Map<string, AlertConfigRow>();
@@ -58,7 +60,7 @@ export function AlertSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-wrap gap-4">
       <ChannelBlock
         channel="email"
         label="Email"
@@ -130,40 +132,42 @@ function ChannelBlock({
 }: ChannelBlockProps) {
   const [target, setTarget] = useState(savedTarget);
 
+  const configured = target.trim().length > 0;
+  const enabledCount = ALERT_TYPES.filter(
+    (t) => byKey.get(keyOf(t.type, channel))?.enabled,
+  ).length;
+
   return (
-    <div className="rounded-md border border-border p-4">
-      <div className="mb-3 text-sm font-medium">{label}</div>
-      <input
-        type={inputType}
-        value={target}
-        placeholder={placeholder}
-        onChange={(e) => setTarget(e.target.value)}
-        onBlur={() => {
-          if (target !== savedTarget) onTargetSave(channel, target.trim());
-        }}
-        className="mb-4 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
-      />
-      <div className="flex flex-col gap-3">
-        {ALERT_TYPES.map((t) => {
-          const row = byKey.get(keyOf(t.type, channel));
-          const enabled = row?.enabled ?? false;
-          const disabled = target.trim().length === 0;
-          return (
-            <label key={t.type} className="flex items-start justify-between gap-4">
-              <span className="flex flex-col">
-                <span className="text-sm font-medium">{t.label}</span>
-                <span className="text-xs text-muted-foreground">{t.description}</span>
-              </span>
-              <input
-                type="checkbox"
-                checked={enabled}
-                disabled={disabled}
-                onChange={(e) => onToggle(t.type, channel, e.target.checked, target.trim())}
-                className="mt-1 h-4 w-4 cursor-pointer rounded border-border accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
-              />
-            </label>
-          );
-        })}
+    <div className="min-w-0 flex-1 basis-[300px] overflow-hidden rounded-lg border border-border">
+      <div className="flex items-center justify-between gap-2.5 border-b border-border bg-panel px-3.5 py-2.5">
+        <span className="text-sm font-medium">{label}</span>
+        <span className={`text-xs ${configured ? 'text-ok' : 'text-subtle'}`}>
+          {configured ? `${enabledCount} of ${ALERT_TYPES.length} on` : 'Not set up'}
+        </span>
+      </div>
+      <div className="px-3.5 py-3">
+        <Input
+          type={inputType}
+          value={target}
+          placeholder={placeholder}
+          onChange={(e) => setTarget(e.target.value)}
+          onBlur={() => {
+            if (target !== savedTarget) onTargetSave(channel, target.trim());
+          }}
+          className="w-full"
+        />
+        <div className="mt-2.5">
+          {ALERT_TYPES.map((t) => (
+            <ToggleRow
+              key={t.type}
+              label={t.label}
+              description={t.description}
+              checked={byKey.get(keyOf(t.type, channel))?.enabled ?? false}
+              disabled={!configured}
+              onChange={(next) => onToggle(t.type, channel, next, target.trim())}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

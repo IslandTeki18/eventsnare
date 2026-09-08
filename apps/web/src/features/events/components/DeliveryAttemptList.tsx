@@ -1,49 +1,53 @@
 import type { Doc } from '@convex/_generated/dataModel';
 
 // Per-attempt delivery history for an event (SPEC FR-DASH-2): status code or error and the
-// truncated customer response body.
+// truncated customer response body, as one hairline-divided row per attempt.
 
 interface DeliveryAttemptListProps {
   attempts: Doc<'deliveryAttempts'>[];
 }
 
-function statusColor(code?: number): string {
-  if (code === undefined) return 'text-rose-400';
-  if (code >= 200 && code < 300) return 'text-emerald-400';
-  return 'text-amber-400';
+function tone(code?: number): string {
+  if (code === undefined) return 'text-bad';
+  if (code >= 200 && code < 300) return 'text-ok';
+  if (code >= 500) return 'text-bad';
+  return 'text-warn';
+}
+
+function summarize(attempt: Doc<'deliveryAttempts'>): string {
+  const at = new Date(attempt.startedAt).toLocaleTimeString();
+  const ms =
+    attempt.completedAt === undefined ? null : attempt.completedAt - attempt.startedAt;
+  const took = ms === null ? null : ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+  return [at, took ? `took ${took}` : null, attempt.errorMessage].filter(Boolean).join(' · ');
 }
 
 export function DeliveryAttemptList({ attempts }: DeliveryAttemptListProps) {
   if (attempts.length === 0) {
-    return <p className="text-sm text-muted-foreground">No delivery attempts yet.</p>;
+    return <p className="px-5 py-[15px] text-xs text-subtle">No delivery attempts yet.</p>;
   }
 
   return (
-    <ul className="flex flex-col gap-2">
+    <>
       {attempts.map((attempt) => (
-        <li
-          key={attempt._id}
-          className="rounded-md border border-border bg-background p-3 text-sm"
-        >
-          <div className="flex items-center justify-between">
-            <span className="font-medium">Attempt {attempt.attemptNumber}</span>
-            <span className={statusColor(attempt.statusCode)}>
+        <div key={attempt._id} className="border-b border-border-soft px-5 py-[15px]">
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2 text-sm">
+              <span className={`h-1.5 w-1.5 bg-current ${tone(attempt.statusCode)}`} />
+              Attempt {attempt.attemptNumber}
+            </span>
+            <span className={`font-mono text-sm tabular-nums ${tone(attempt.statusCode)}`}>
               {attempt.statusCode ?? 'error'}
             </span>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {new Date(attempt.startedAt).toLocaleString()}
-          </p>
-          {attempt.errorMessage ? (
-            <p className="mt-1 text-xs text-rose-400">{attempt.errorMessage}</p>
-          ) : null}
+          <div className="mt-1 text-xs text-subtle">{summarize(attempt)}</div>
           {attempt.responseBodyTruncated ? (
-            <pre className="mt-2 overflow-x-auto rounded bg-muted p-2 font-mono text-xs text-muted-foreground">
+            <pre className="m-0 mt-2.5 overflow-x-auto rounded-md border border-border bg-panel px-2.5 py-2 font-mono text-xs leading-4 text-muted-foreground">
               {attempt.responseBodyTruncated}
             </pre>
           ) : null}
-        </li>
+        </div>
       ))}
-    </ul>
+    </>
   );
 }

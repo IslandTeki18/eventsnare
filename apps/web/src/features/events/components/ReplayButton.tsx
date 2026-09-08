@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { Button } from '@/components/ui/Button';
 
 // One-click replay (SPEC FR-DASH-3): resets the event's delivery lifecycle and schedules an
 // immediate attempt. The event row updates reactively.
@@ -24,13 +25,8 @@ export function ReplayButton({ eventId }: ReplayButtonProps) {
   };
 
   return (
-    <button
-      type="button"
-      onClick={() => void handleClick()}
-      disabled={replaying}
-      className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
-    >
-      {replaying ? 'Replaying…' : 'Replay'}
-    </button>
+    <Button variant="primary" onClick={() => void handleClick()} disabled={replaying}>
+      {replaying ? 'Sending…' : 'Send again'}
+    </Button>
   );
 }

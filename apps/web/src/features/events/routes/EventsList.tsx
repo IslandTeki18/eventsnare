@@ -3,7 +3,11 @@ import { Link, useSearchParams } from 'react-router';
 import { usePaginatedQuery, useMutation } from 'convex/react';
 import { api } from '@convex/_generated/api';
 import type { Id } from '@convex/_generated/dataModel';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { statusRail } from '@/lib/status';
 import { EventFilters } from '@/features/events/components/EventFilters';
 
 type EventStatus = 'received' | 'delivering' | 'delivered' | 'failed' | 'deadLetter';
@@ -30,53 +34,64 @@ export function EventsList() {
   const lastStatusCode = statusCode ? Number(statusCode) : undefined;
   const isSearch = debouncedTerm.length > 0;
 
-  return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <div className="mb-2 flex items-start justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Events</h1>
-        <EventFilters
-          term={term}
-          onTermChange={setTerm}
-          status={status}
-          onStatusChange={(s) => setStatus(s as EventStatus)}
-          statusCode={statusCode}
-          onStatusCodeChange={setStatusCode}
-        />
-      </div>
-      <p className="mb-6 text-xs text-muted-foreground">
-        Search covers event type, provider event id, and the inline payload prefix. Large payloads
-        stored as files are not searched.
-      </p>
+  const clearFilters = () => {
+    setStatus(undefined);
+    setTerm('');
+    setStatusCode('');
+  };
 
+  return (
+    <>
+      <PageHeader title="Events" />
+      <EventFilters
+        term={term}
+        onTermChange={setTerm}
+        status={status}
+        onStatusChange={(s) => setStatus(s as EventStatus)}
+        statusCode={statusCode}
+        onStatusCodeChange={setStatusCode}
+      />
       {isSearch ? (
         <SearchResults
           term={debouncedTerm}
           sourceId={sourceId}
           status={status}
           lastStatusCode={lastStatusCode}
+          onClearFilters={clearFilters}
         />
       ) : (
-        <BrowseResults sourceId={sourceId} status={status} lastStatusCode={lastStatusCode} />
+        <BrowseResults
+          sourceId={sourceId}
+          status={status}
+          lastStatusCode={lastStatusCode}
+          onClearFilters={clearFilters}
+        />
       )}
-    </div>
+    </>
   );
 }
 
-function BrowseResults({
-  sourceId,
-  status,
-  lastStatusCode,
-}: {
+interface ResultsProps {
   sourceId?: Id<'sources'>;
   status?: EventStatus;
   lastStatusCode?: number;
-}) {
+  onClearFilters: () => void;
+}
+
+function BrowseResults({ sourceId, status, lastStatusCode, onClearFilters }: ResultsProps) {
   const { results, status: pageStatus, loadMore } = usePaginatedQuery(
     api.events.list,
     { sourceId, status, lastStatusCode },
     { initialNumItems: 25 },
   );
-  return <EventTable results={results} pageStatus={pageStatus} loadMore={loadMore} />;
+  return (
+    <EventTable
+      results={results}
+      pageStatus={pageStatus}
+      loadMore={loadMore}
+      onClearFilters={onClearFilters}
+    />
+  );
 }
 
 function SearchResults({
@@ -84,18 +99,21 @@ function SearchResults({
   sourceId,
   status,
   lastStatusCode,
-}: {
-  term: string;
-  sourceId?: Id<'sources'>;
-  status?: EventStatus;
-  lastStatusCode?: number;
-}) {
+  onClearFilters,
+}: ResultsProps & { term: string }) {
   const { results, status: pageStatus, loadMore } = usePaginatedQuery(
     api.events.search,
     { term, sourceId, status, lastStatusCode },
     { initialNumItems: 25 },
   );
-  return <EventTable results={results} pageStatus={pageStatus} loadMore={loadMore} />;
+  return (
+    <EventTable
+      results={results}
+      pageStatus={pageStatus}
+      loadMore={loadMore}
+      onClearFilters={onClearFilters}
+    />
+  );
 }
 
 type EventRow = {
@@ -104,16 +122,31 @@ type EventRow = {
   eventType: string;
   signatureValid: boolean;
   status: EventStatus;
+  attemptCount: number;
+  lastStatusCode?: number;
 };
+
+function codeTone(code?: number): string {
+  if (code === undefined) return 'text-subtle';
+  if (code >= 200 && code < 300) return 'text-ok';
+  if (code >= 500) return 'text-bad';
+  return 'text-warn';
+}
+
+const HEAD_CELL =
+  'whitespace-nowrap border-b border-border px-3 py-2 text-2xs font-medium text-subtle';
+const CELL = 'border-b border-border-soft px-3 py-[7px] text-sm';
 
 function EventTable({
   results,
   pageStatus,
   loadMore,
+  onClearFilters,
 }: {
   results: EventRow[];
   pageStatus: ReturnType<typeof usePaginatedQuery>['status'];
   loadMore: (n: number) => void;
+  onClearFilters: () => void;
 }) {
   // Selection is per-loaded-page (FR-DASH-4): replay the visible set the user picks.
   const [selected, setSelected] = useState<Set<Id<'events'>>>(new Set());
@@ -140,8 +173,13 @@ function EventTable({
 
   if (results.length === 0 && pageStatus !== 'LoadingFirstPage') {
     return (
-      <div className="rounded-lg border border-border bg-background p-8 text-center">
-        <p className="text-sm text-muted-foreground">No matching events.</p>
+      <div className="flex flex-1 items-center justify-center overflow-y-auto">
+        <EmptyState
+          title="No events match these filters"
+          description="Nothing here matches the current search, status, and response code. Try widening the filters."
+        >
+          <Button onClick={onClearFilters}>Clear filters</Button>
+        </EmptyState>
       </div>
     );
   }
@@ -149,63 +187,76 @@ function EventTable({
   return (
     <>
       {selected.size > 0 ? (
-        <div className="mb-3 flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm">
+        <div className="flex flex-shrink-0 items-center gap-3 border-b border-border bg-muted px-[22px] py-2 text-sm">
           <span className="text-muted-foreground">{selected.size} selected</span>
-          <button
-            type="button"
-            onClick={() => void handleReplay()}
-            disabled={replaying}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
-          >
+          <Button size="sm" onClick={() => void handleReplay()} disabled={replaying}>
             {replaying ? 'Replaying…' : 'Replay selected'}
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => setSelected(new Set())}
-            className="text-muted-foreground underline hover:text-foreground"
+            className="text-subtle underline hover:text-foreground"
           >
             Clear
           </button>
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-lg border border-border">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+      <div className="flex-1 overflow-auto">
+        <table className="w-full border-collapse text-left">
+          <thead>
             <tr>
-              <th className="w-10 px-4 py-2.5" />
-              <th className="px-4 py-2.5 font-medium">Received</th>
-              <th className="px-4 py-2.5 font-medium">Type</th>
-              <th className="px-4 py-2.5 font-medium">Signature</th>
-              <th className="px-4 py-2.5 font-medium">Status</th>
+              <th className={`${HEAD_CELL} w-px pl-[22px]`}>
+                <span className="sr-only">Select</span>
+              </th>
+              <th className={HEAD_CELL}>Status</th>
+              <th className={HEAD_CELL}>Event</th>
+              <th className={HEAD_CELL}>Signature</th>
+              <th className={`${HEAD_CELL} text-right`}>Attempts</th>
+              <th className={`${HEAD_CELL} text-right`}>Response</th>
+              <th className={`${HEAD_CELL} pr-[22px] text-right`}>Received</th>
             </tr>
           </thead>
           <tbody>
             {results.map((event) => (
-              <tr key={event._id} className="border-t border-border hover:bg-muted/30">
-                <td className="px-4 py-3">
+              <tr key={event._id} className="hover:bg-muted">
+                <td
+                  className={`${CELL} pl-[22px]`}
+                  style={statusRail(event.status)}
+                >
                   <input
                     type="checkbox"
                     checked={selected.has(event._id)}
                     onChange={() => toggle(event._id)}
                     aria-label="Select event"
+                    className="accent-foreground"
                   />
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  <Link to={`/events/${event._id}`} className="hover:text-primary">
-                    {new Date(event.receivedAt).toLocaleString()}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 font-mono text-xs">{event.eventType}</td>
-                <td className="px-4 py-3">
-                  {event.signatureValid ? (
-                    <span className="text-xs text-emerald-400">valid</span>
-                  ) : (
-                    <span className="text-xs text-rose-400">invalid</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
+                <td className={`${CELL} whitespace-nowrap`}>
                   <StatusBadge status={event.status} />
+                </td>
+                <td className={`${CELL} whitespace-nowrap font-mono`}>
+                  <Link to={`/events/${event._id}`}>{event.eventType}</Link>
+                </td>
+                <td
+                  className={`${CELL} whitespace-nowrap ${
+                    event.signatureValid ? 'text-muted-foreground' : 'text-bad'
+                  }`}
+                >
+                  {event.signatureValid ? 'Verified' : 'Not verified'}
+                </td>
+                <td className={`${CELL} text-right tabular-nums text-muted-foreground`}>
+                  {event.attemptCount}
+                </td>
+                <td
+                  className={`${CELL} text-right font-mono tabular-nums ${codeTone(event.lastStatusCode)}`}
+                >
+                  {event.lastStatusCode ?? '—'}
+                </td>
+                <td
+                  className={`${CELL} whitespace-nowrap pr-[22px] text-right font-mono text-xs tabular-nums text-muted-foreground`}
+                >
+                  {new Date(event.receivedAt).toLocaleString()}
                 </td>
               </tr>
             ))}
@@ -213,15 +264,12 @@ function EventTable({
         </table>
       </div>
 
-      {pageStatus === 'CanLoadMore' ? (
-        <button
-          type="button"
-          onClick={() => loadMore(25)}
-          className="mt-4 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
-        >
-          Load more
-        </button>
-      ) : null}
+      <div className="flex flex-shrink-0 items-center justify-between border-t border-border px-[22px] py-2.5 text-sm text-subtle">
+        <span>Showing {results.length.toLocaleString('en-US')}</span>
+        {pageStatus === 'CanLoadMore' ? (
+          <Button onClick={() => loadMore(25)}>Load more</Button>
+        ) : null}
+      </div>
     </>
   );
 }

@@ -1,75 +1,81 @@
 import { Link } from 'react-router';
 import { useQuery } from 'convex/react';
 import { api } from '@convex/_generated/api';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { statusRail } from '@/lib/status';
 import { getProviderMeta } from '@/features/sources/lib/providers';
+
+const HEAD_CELL =
+  'whitespace-nowrap border-b border-border px-3 py-2 text-2xs font-medium text-subtle';
+const CELL = 'border-b border-border-soft px-3 py-2 text-sm';
 
 export function SourcesList() {
   const sources = useQuery(api.sources.list);
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Sources</h1>
-        <Link
-          to="/sources/new"
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-        >
-          Add source
+    <>
+      <PageHeader title="Sources">
+        <Link to="/sources/new">
+          <Button variant="primary">Add source</Button>
         </Link>
-      </div>
+      </PageHeader>
 
       {sources === undefined ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="px-[22px] py-4 text-sm text-subtle">Loading…</p>
       ) : sources.length === 0 ? (
-        <div className="rounded-lg border border-border bg-background p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No sources yet. Connect your first webhook provider to get started.
-          </p>
-          <Link
-            to="/onboarding"
-            className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        <div className="flex flex-1 items-center justify-center overflow-y-auto">
+          <EmptyState
+            title="No sources yet"
+            description="A source connects one service — like Stripe or Shopify — to your own system. Add one and its events will start appearing here."
           >
-            Connect a provider
-          </Link>
+            <Link to="/onboarding">
+              <Button variant="primary">Add your first source</Button>
+            </Link>
+          </EmptyState>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+        <div className="flex-1 overflow-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
               <tr>
-                <th className="px-4 py-2.5 font-medium">Name</th>
-                <th className="px-4 py-2.5 font-medium">Provider</th>
-                <th className="px-4 py-2.5 font-medium">Forward URL</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className={`${HEAD_CELL} pl-[22px]`}>Status</th>
+                <th className={HEAD_CELL}>Name</th>
+                <th className={HEAD_CELL}>Provider</th>
+                <th className={`${HEAD_CELL} pr-[22px]`}>Sends to</th>
               </tr>
             </thead>
             <tbody>
               {sources.map((source) => (
-                <tr key={source._id} className="border-t border-border hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <Link
-                      to={`/sources/${source._id}`}
-                      className="font-medium text-foreground hover:text-primary"
-                    >
-                      {source.name}
-                    </Link>
+                <tr key={source._id} className="hover:bg-muted">
+                  <td
+                    className={`${CELL} whitespace-nowrap pl-[22px]`}
+                    style={statusRail(source.status)}
+                  >
+                    <StatusBadge status={source.status} />
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className={`${CELL} whitespace-nowrap font-medium`}>
+                    <Link to={`/sources/${source._id}`}>{source.name}</Link>
+                  </td>
+                  <td className={`${CELL} whitespace-nowrap text-muted-foreground`}>
                     {getProviderMeta(source.provider)?.name ?? source.provider}
                   </td>
-                  <td className="max-w-xs truncate px-4 py-3 font-mono text-xs text-muted-foreground">
+                  <td
+                    className={`${CELL} max-w-[260px] truncate whitespace-nowrap pr-[22px] font-mono text-xs text-muted-foreground`}
+                  >
                     {source.forwardUrl}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={source.status} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <p className="px-[22px] py-3 text-sm text-subtle">
+            Every source verifies the provider&rsquo;s signature before anything is forwarded.
+          </p>
         </div>
       )}
-    </div>
+    </>
   );
 }

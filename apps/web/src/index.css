@@ -4,20 +4,52 @@
 
 /* @scaffold:theme-start */
 @layer base {
+  /* Light is the base; `.dark` is toggled onto <html> by features/theme-settings. */
   :root {
-    --background: 249 22% 12%;
-    --foreground: 245 50% 91%;
-    --primary: 343 76% 68%;
-    --primary-foreground: 345 40% 12%;
-    --secondary: 189 43% 73%;
-    --secondary-foreground: 189 30% 10%;
-    --muted: 249 15% 18%;
-    --muted-foreground: 248 15% 61%;
-    --border: 247 14% 24%;
-    --radius: 0.625rem;
-    --font-body: Inter, system-ui, -apple-system, sans-serif;
-    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+    --background: 60 11.1% 98.2%;
+    --panel: 0 0% 100%;
+    --foreground: 240 13% 9%;
+    --muted: 60 7.7% 94.9%;
+    --muted-foreground: 240 4.5% 39%;
+    --subtle: 240 3.3% 47.1%;
+    --border: 60 5.1% 88.4%;
+    --border-soft: 60 8.6% 93.1%;
+    --rail-off: 60 4.9% 83.9%;
+    --primary: 240 13% 9%;
+    --primary-foreground: 60 11.1% 98.2%;
+    --secondary: 210.7 45.9% 38.4%;
+    --secondary-foreground: 60 11.1% 98.2%;
+    --ok: 146.9 45.3% 33.7%;
+    --warn: 42.1 63.3% 33.1%;
+    --bad: 0 48.7% 44.3%;
+    --info: 210.7 45.9% 38.4%;
+    --destructive: 0 48.7% 44.3%;
+    --radius: 6px;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
   }
+
+  .dark {
+    --background: 240 4.3% 4.5%;
+    --panel: 240 5.9% 6.7%;
+    --foreground: 240 5.6% 92.9%;
+    --muted: 240 8.3% 9.4%;
+    --muted-foreground: 240 4.1% 62%;
+    --subtle: 240 3.7% 47.6%;
+    --border: 240 5.4% 14.5%;
+    --border-soft: 240 7.1% 11%;
+    --rail-off: 240 5.6% 17.5%;
+    --primary: 240 5.6% 92.9%;
+    --primary-foreground: 240 4.3% 4.5%;
+    --secondary: 208.7 38.3% 65.7%;
+    --secondary-foreground: 240 4.3% 4.5%;
+    --ok: 142.5 38.7% 63.5%;
+    --warn: 40.4 58.5% 63.1%;
+    --bad: 0 57.5% 71.4%;
+    --info: 208.7 38.3% 65.7%;
+    --destructive: 0 57.5% 71.4%;
+  }
+
   body {
     font-family: var(--font-body);
   }
@@ -27,7 +59,15 @@
 @layer base {
   body {
     margin: 0;
-    font-family: Inter, system-ui, -apple-system, sans-serif;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-body);
+    font-size: 13px;
     -webkit-font-smoothing: antialiased;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--subtle));
   }
 }

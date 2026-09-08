@@ -1,9 +1,9 @@
 import { Route, Routes } from 'react-router';
 import { SignIn, SignUp } from '@/features/auth';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { Scrollable } from '@/components/layouts/AppShell';
 import { Pricing, Billing } from '@/features/stripe-payments';
 import '@/features/theme-settings/lib/bootstrap';
-import { ThemeToggle } from '@/features/theme-settings';
 import { Settings } from '@/features/settings';
 import { Profile } from '@/features/user-profile';
 import { Home } from '@/features/dashboard';
@@ -14,14 +14,11 @@ import { Analytics } from '@/features/analytics';
 import { Usage } from '@/features/usage';
 import { CliTokens } from '@/features/cli-tokens';
 import { NotificationToaster } from '@/features/notifications/components/NotificationToaster';
-import { NotificationBell } from '@/features/notifications';
 // @scaffold:imports
 
 export function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <ThemeToggle />
-      <NotificationBell />
       <NotificationToaster />
       <Routes>
         {/* Auth */}
@@ -32,12 +29,12 @@ export function App() {
         <Route path="/" element={<DashboardLayout><Home /></DashboardLayout>} />
         <Route
           path="/onboarding"
-          element={<DashboardLayout><Onboarding /></DashboardLayout>}
+          element={<DashboardLayout><Scrollable><Onboarding /></Scrollable></DashboardLayout>}
         />
         <Route path="/sources" element={<DashboardLayout><SourcesList /></DashboardLayout>} />
         <Route
           path="/sources/new"
-          element={<DashboardLayout><SourceCreate /></DashboardLayout>}
+          element={<DashboardLayout><Scrollable><SourceCreate /></Scrollable></DashboardLayout>}
         />
         <Route
           path="/sources/:sourceId"
@@ -48,12 +45,12 @@ export function App() {
           path="/events/:eventId"
           element={<DashboardLayout><EventDetail /></DashboardLayout>}
         />
-        <Route path="/analytics" element={<DashboardLayout><Analytics /></DashboardLayout>} />
-        <Route path="/usage" element={<DashboardLayout><Usage /></DashboardLayout>} />
-        <Route path="/cli" element={<DashboardLayout><CliTokens /></DashboardLayout>} />
-        <Route path="/billing" element={<DashboardLayout><Billing /></DashboardLayout>} />
+        <Route path="/analytics" element={<DashboardLayout><Scrollable><Analytics /></Scrollable></DashboardLayout>} />
+        <Route path="/usage" element={<DashboardLayout><Scrollable><Usage /></Scrollable></DashboardLayout>} />
+        <Route path="/cli" element={<DashboardLayout><Scrollable><CliTokens /></Scrollable></DashboardLayout>} />
+        <Route path="/billing" element={<DashboardLayout><Scrollable><Billing /></Scrollable></DashboardLayout>} />
         <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
-        <Route path="/profile" element={<DashboardLayout><Profile /></DashboardLayout>} />
+        <Route path="/profile" element={<DashboardLayout><Scrollable><Profile /></Scrollable></DashboardLayout>} />
 
         {/* Standalone marketing routes */}
         <Route path="/pricing" element={<Pricing />} />

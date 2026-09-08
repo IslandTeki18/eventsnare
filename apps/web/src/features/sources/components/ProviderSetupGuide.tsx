@@ -19,35 +19,37 @@ export function ProviderSetupGuide({ provider, ingressUrl, ingressPath }: Provid
   const hasIngress = ingressUrl !== undefined && ingressPath !== undefined;
 
   return (
-    <div className="rounded-md border border-border bg-muted/40 p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">Connect {meta.name}</h3>
+    <>
+      <div className="mb-3.5 flex items-center justify-between gap-3">
+        <span className="text-sm font-medium">How to connect {meta.name}</span>
         <a
           href={meta.docsUrl}
           target="_blank"
           rel="noreferrer"
-          className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          className="flex-shrink-0 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          {meta.name} docs ↗
+          {meta.name}&rsquo;s guide ↗
         </a>
       </div>
 
-      <ol className="flex flex-col gap-3">
+      <ol className="m-0 flex list-none flex-col gap-3 p-0">
         {meta.steps.map((step, i) => (
           <li key={step.title} className="flex gap-3">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold">
+            <span className="flex h-[19px] w-[19px] flex-shrink-0 items-center justify-center rounded-full border border-border text-2xs text-muted-foreground">
               {i + 1}
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{step.title}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{step.detail}</p>
+            <div className="min-w-0 flex-1 pt-px">
+              <div className="text-sm font-medium">{step.title}</div>
+              <div className="mt-0.5 text-sm leading-[18px] text-muted-foreground">
+                {step.detail}
+              </div>
               {step.showIngressUrl ? (
                 hasIngress ? (
                   <div className="mt-2">
                     <IngressUrlDisplay url={ingressUrl ?? ''} path={ingressPath ?? ''} />
                   </div>
                 ) : (
-                  <p className="mt-1 text-[11px] italic text-muted-foreground">
+                  <p className="mt-1 text-xs italic text-subtle">
                     Your ingress URL appears here once the source is created.
                   </p>
                 )
@@ -56,6 +58,6 @@ export function ProviderSetupGuide({ provider, ingressUrl, ingressPath }: Provid
           </li>
         ))}
       </ol>
-    </div>
+    </>
   );
 }
