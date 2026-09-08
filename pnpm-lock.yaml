@@ -130,12 +130,6 @@ importers:
         specifier: ^2.5.5
         version: 2.6.1
     devDependencies:
-      '@fontsource/inter':
-        specifier: ^5.1.0
-        version: 5.2.8
-      '@fontsource/jetbrains-mono':
-        specifier: ^5.1.0
-        version: 5.2.8
       '@testing-library/jest-dom':
         specifier: ^6.6.0
         version: 6.9.1

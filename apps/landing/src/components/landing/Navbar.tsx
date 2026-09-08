@@ -1,94 +1,66 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router'
-import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/lib/theme'
+
+function scrollToSignup() {
+  document.getElementById('email-signup')?.scrollIntoView({ behavior: 'smooth' })
+}
 
 export function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
-  const [open, setOpen] = useState(false)
-
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', handler, { passive: true })
-    return () => window.removeEventListener('scroll', handler)
-  }, [])
-
-  function scrollToSignup() {
-    document.getElementById('email-signup')?.scrollIntoView({ behavior: 'smooth' })
-    setOpen(false)
-  }
+  const [theme, setTheme] = useTheme()
 
   return (
     <nav
       aria-label="Main navigation"
-      className={cn(
-        'fixed left-0 right-0 top-0 z-50 transition-all duration-200',
-        scrolled && 'border-b border-border bg-background/80 backdrop-blur-sm'
-      )}
+      className="sticky top-0 z-50 border-b border-border bg-background"
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link to="/" className="text-lg font-semibold text-foreground">
-          Eventsnare
+      <div className="mx-auto flex h-[57px] max-w-[1080px] items-center justify-between gap-4 px-4 sm:px-6">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5">
+          <span className="h-[7px] w-[7px] bg-foreground" aria-hidden />
+          <span className="text-[15px] font-semibold tracking-[-0.01em]">Eventsnare</span>
         </Link>
 
-        {/* Desktop */}
-        <div className="hidden items-center gap-6 md:flex">
-          <Link
-            to="/blog"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
+        <div className="flex items-center gap-3 sm:gap-[18px]">
+          <Link to="/blog" className="text-base text-muted-foreground hover:text-foreground">
             Blog
           </Link>
-          <a
-            href="/#pricing"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
+          <a href="/#pricing" className="text-base text-muted-foreground hover:text-foreground">
             Pricing
           </a>
+
+          <div
+            role="group"
+            aria-label="Color theme"
+            className="hidden overflow-hidden rounded-[5px] border border-border sm:flex"
+          >
+            {(['dark', 'light'] as const).map((option, i) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setTheme(option)}
+                aria-pressed={theme === option}
+                className={cn(
+                  'px-[9px] py-1 text-xs capitalize',
+                  i > 0 && 'border-l border-border',
+                  theme === option
+                    ? 'bg-foreground text-background'
+                    : 'text-subtle hover:text-foreground'
+                )}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+
           <button
+            type="button"
             onClick={scrollToSignup}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            className="shrink-0 rounded-[5px] bg-foreground px-[13px] py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
           >
             Get early access
           </button>
         </div>
-
-        {/* Mobile toggle */}
-        <button
-          onClick={() => setOpen(v => !v)}
-          className="text-foreground md:hidden"
-          aria-label="Toggle menu"
-          aria-expanded={open}
-        >
-          {open ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
-        </button>
       </div>
-
-      {/* Mobile drawer */}
-      {open && (
-        <div className="flex flex-col gap-4 border-t border-border bg-background px-6 py-4 md:hidden">
-          <Link
-            to="/blog"
-            onClick={() => setOpen(false)}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Blog
-          </Link>
-          <a
-            href="/#pricing"
-            onClick={() => setOpen(false)}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Pricing
-          </a>
-          <button
-            onClick={scrollToSignup}
-            className="rounded-lg bg-primary px-4 py-2 text-left text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            Get early access
-          </button>
-        </div>
-      )}
     </nav>
   )
 }

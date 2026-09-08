@@ -42,9 +42,9 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
 
   if (status === 'success') {
     return (
-      <div id={id} className={cn('py-4 text-center', className)}>
-        <p className="font-medium text-primary">You're on the list.</p>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div id={id} className={cn('py-4', className)}>
+        <p className="text-lg font-medium">You're on the list.</p>
+        <p className="mt-1 text-base text-muted-foreground">
           We'll email you when Eventsnare launches.
         </p>
       </div>
@@ -52,7 +52,12 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
   }
 
   return (
-    <form id={id} noValidate onSubmit={handleSubmit} className={cn('flex flex-col gap-3', className)}>
+    <form
+      id={id}
+      noValidate
+      onSubmit={handleSubmit}
+      className={cn('flex flex-col gap-[9px]', className)}
+    >
       <div className="flex gap-2">
         <input
           type="email"
@@ -63,21 +68,23 @@ export function EmailSignupForm({ className, id }: { className?: string; id?: st
           onChange={e => setEmail(e.target.value)}
           placeholder="your@email.com"
           disabled={status === 'loading'}
-          className="flex-1 rounded-lg border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+          className="min-w-0 flex-1 rounded-[5px] border border-border bg-transparent px-[11px] py-2 text-[13.5px] text-foreground outline-none focus:border-foreground disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="shrink-0 rounded-[5px] bg-foreground px-[15px] py-2 text-base font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {status === 'loading' ? 'Joining...' : 'Get early access'}
         </button>
       </div>
-      {fieldError && <p role="alert" className="text-sm text-destructive">{fieldError}</p>}
+      {fieldError && <p role="alert" className="text-base text-destructive">{fieldError}</p>}
       {status === 'error' && (
-        <p role="alert" className="text-sm text-destructive">Something went wrong. Please try again.</p>
+        <p role="alert" className="text-base text-destructive">
+          Something went wrong. Please try again.
+        </p>
       )}
-      <p className="text-center text-xs text-muted-foreground">No spam. Launch updates only.</p>
+      <p className="text-xs text-subtle">No spam. Launch updates only.</p>
     </form>
   )
 }

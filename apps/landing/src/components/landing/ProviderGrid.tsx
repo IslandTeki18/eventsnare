@@ -1,44 +1,32 @@
 import { PROVIDERS } from './providers'
-import { useReveal } from '@/lib/useReveal'
+import { SectionHeading } from './SectionHeading'
 
 export function ProviderGrid() {
-  const { ref: headingRef, className: headingClassName } = useReveal()
-  const { ref: gridRef, className: gridClassName } = useReveal()
-
   return (
-    <section aria-labelledby="heading-providers" className="bg-muted/40 px-6 py-24">
-      <div className="mx-auto max-w-6xl">
-        <div ref={headingRef} className={headingClassName}>
-          <div className="mb-12 text-center">
-            <h2 id="heading-providers" className="text-3xl font-bold text-foreground">
-              Works with the providers you already use
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              More providers added before and after launch.
-            </p>
-          </div>
-        </div>
+    <section aria-labelledby="heading-providers" className="border-b border-border bg-panel">
+      <div className="mx-auto max-w-[1080px] px-6 py-[72px]">
+        <SectionHeading
+          id="heading-providers"
+          eyebrow="Providers"
+          title="Works with the providers you already use"
+          sub="More providers added before and after launch."
+        />
 
-        <div ref={gridRef} className={gridClassName}>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5">
+        <div className="mt-[30px] overflow-hidden rounded-[7px] border border-border">
+          <div className="-ml-px -mt-px grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
             {PROVIDERS.map(({ name, descriptor, Icon }) => (
-              <div
-                key={name}
-                className="flex flex-col items-center gap-3 rounded-xl border border-border bg-muted p-6"
-              >
-                <Icon size={32} className="text-foreground" />
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-foreground">{name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{descriptor}</p>
-                </div>
+              <div key={name} className="border-l border-t border-border p-5">
+                <Icon size={24} className="mb-3.5 block text-muted-foreground" />
+                <p className="text-lg font-semibold">{name}</p>
+                <p className="mt-1.5 text-sm leading-[18px] text-muted-foreground">{descriptor}</p>
               </div>
             ))}
           </div>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Using a provider not listed? Custom adapters are on the roadmap.
-          </p>
         </div>
+
+        <p className="mt-4 text-base text-subtle">
+          Using a provider not listed? Custom adapters are on the roadmap.
+        </p>
       </div>
     </section>
   )

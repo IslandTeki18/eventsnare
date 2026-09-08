@@ -3,41 +3,31 @@ import { PROVIDERS } from './providers'
 
 export function Hero() {
   return (
-    <section aria-label="Hero" className="relative flex min-h-screen flex-col items-center justify-center px-6 pb-16 pt-24 text-center">
-      {/* Radial gradient background accent */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 50% at 50% 0%, hsl(343 76% 68% / 0.07), transparent)',
-        }}
-      />
-
-      <div className="relative z-10 flex flex-col items-center gap-8">
-        <h1 className="max-w-2xl text-5xl font-bold leading-tight tracking-tight text-foreground md:text-6xl">
+    <section aria-label="Hero" className="border-b border-border">
+      <div className="mx-auto max-w-[1080px] px-6 pb-[72px] pt-[88px]">
+        <h1 className="max-w-[16em] text-[clamp(38px,6vw,60px)] font-semibold leading-[1.04] tracking-[-0.035em]">
           Webhooks break.
           <br />
           Your events shouldn&apos;t.
         </h1>
 
-        <p className="max-w-2xl text-lg text-muted-foreground md:text-xl">
+        <p className="mt-[22px] max-w-[640px] text-[16.5px] leading-[27px] text-muted-foreground">
           Eventsnare sits between your webhook providers and your app. It verifies every
-          signature, durably stores every event, and delivers it to your endpoint — with
-          retries, deduplication, and one-click replay. So a missed Stripe payment never
-          silently vanishes again.
+          signature, durably stores every event, and delivers it to your endpoint — with retries,
+          deduplication, and one-click replay. So a missed Stripe payment never silently vanishes
+          again.
         </p>
 
-        <EmailSignupForm id="email-signup" className="w-full max-w-md" />
+        <EmailSignupForm id="email-signup" className="mt-[30px] max-w-[440px]" />
 
-        {/* Provider strip */}
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-sm text-muted-foreground">Works with the tools you already use</p>
-          <div className="flex items-center gap-8 opacity-50">
+        <div className="mt-11">
+          <p className="text-sm text-subtle">Works with the tools you already use</p>
+          <div className="mt-3.5 flex flex-wrap items-center gap-x-[26px] gap-y-3">
             {PROVIDERS.map(({ name, Icon }) => (
-              <div key={name} className="flex flex-col items-center gap-1.5">
-                <Icon size={28} className="text-foreground" />
-                <span className="text-xs text-muted-foreground">{name}</span>
-              </div>
+              <span key={name} className="inline-flex items-center gap-2 text-muted-foreground">
+                <Icon size={20} />
+                <span className="text-base">{name}</span>
+              </span>
             ))}
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useReveal } from '@/lib/useReveal'
+import { SectionHeading } from './SectionHeading'
 
 const STEPS = [
   {
@@ -24,33 +24,20 @@ const STEPS = [
 ] as const
 
 export function HowItWorks() {
-  const { ref: headingRef, className: headingClassName } = useReveal()
-  const { ref: gridRef, className: gridClassName } = useReveal()
-
   return (
-    <section aria-labelledby="heading-how" className="bg-muted/40 px-6 py-24">
-      <div className="mx-auto max-w-6xl">
-        <div ref={headingRef} className={headingClassName}>
-          <h2 id="heading-how" className="mb-14 text-center text-3xl font-bold text-foreground">
-            How Eventsnare works
-          </h2>
-        </div>
-
-        <div ref={gridRef} className={gridClassName}>
-          <div className="relative grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-6">
-            {/* Dashed connector line (desktop only) */}
-            <div className="absolute left-0 right-0 top-5 hidden border-t border-dashed border-border md:block" />
-
-            {STEPS.map(step => (
-              <div key={step.number} className="relative flex flex-col gap-4">
-                <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-sm font-bold text-primary">
-                  {step.number}
-                </div>
-                <h3 className="font-semibold text-foreground">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+    <section aria-labelledby="heading-how" className="border-b border-border bg-panel">
+      <div className="mx-auto max-w-[1080px] px-6 py-[72px]">
+        <SectionHeading id="heading-how" eyebrow="How it works" title="How Eventsnare works" />
+        <div className="mt-[34px] grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-8 gap-y-7">
+          {STEPS.map(step => (
+            <div key={step.number}>
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-sm tabular-nums text-muted-foreground">
+                {step.number}
               </div>
-            ))}
-          </div>
+              <h3 className="mt-3.5 text-lg font-semibold">{step.title}</h3>
+              <p className="mt-2 text-[13.5px] leading-[21px] text-muted-foreground">{step.body}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

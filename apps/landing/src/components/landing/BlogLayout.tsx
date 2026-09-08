@@ -6,7 +6,7 @@ export function BlogLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <Navbar />
-      <main className="mx-auto min-h-screen max-w-3xl px-6 pb-24 pt-28">{children}</main>
+      <main className="mx-auto min-h-screen max-w-3xl px-6 pb-24 pt-12">{children}</main>
       <Footer />
     </>
   )

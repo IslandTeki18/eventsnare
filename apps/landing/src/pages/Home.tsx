@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/landing/Navbar'
 import { Hero } from '@/components/landing/Hero'
+import { ProductPeek } from '@/components/landing/ProductPeek'
 import { ProblemStatement } from '@/components/landing/ProblemStatement'
 import { HowItWorks } from '@/components/landing/HowItWorks'
 import { Features } from '@/components/landing/Features'
@@ -14,6 +15,7 @@ export function Home() {
       <Navbar />
       <main>
         <Hero />
+        <ProductPeek />
         <ProblemStatement />
         <HowItWorks />
         <Features />
